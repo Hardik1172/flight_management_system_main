@@ -1,0 +1,12 @@
+venv/
+new_venv/
+*.dll
+*.exe
+DLLs/
+Lib/
+Scripts/
+include/
+libs/
+tcl/
+.idea/
+db.sqlite3

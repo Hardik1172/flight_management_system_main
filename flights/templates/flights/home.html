@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="jumbotron text-center">
+    <h1 class="display-4">Welcome to SkyJourney</h1>
+    <p class="lead">Your gateway to affordable and convenient air travel!</p>
+    <a href="{% url 'search_flights' %}" class="btn btn-primary btn-lg">
+        <i class="fas fa-search mr-2"></i>Search Flights
+    </a>
+</div>
+
+<div class="row mt-5">
+    <div class="col-md-4">
+        <div class="card text-center mb-4">
+            <div class="card-body">
+                <i class="fas fa-globe fa-3x mb-3 text-primary"></i>
+                <h5 class="card-title">Global Destinations</h5>
+                <p class="card-text">Explore hundreds of destinations worldwide.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center mb-4">
+            <div class="card-body">
+                <i class="fas fa-dollar-sign fa-3x mb-3 text-success"></i>
+                <h5 class="card-title">Best Prices</h5>
+                <p class="card-text">Find the most competitive fares for your journey.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center mb-4">
+            <div class="card-body">
+                <i class="fas fa-headset fa-3x mb-3 text-info"></i>
+                <h5 class="card-title">24/7 Support</h5>
+                <p class="card-text">Our customer support team is always here to help.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header bg-success text-white">
+        <h2><i class="fas fa-check-circle mr-2"></i>Booking Confirmation</h2>
+    </div>
+    <div class="card-body">
+        <h5 class="card-title">Your booking has been confirmed!</h5>
+        <p class="card-text">
+            <strong>Flight:</strong> {{ booking.flight.flight_number }}<br>
+            <strong>From:</strong> {{ booking.flight.source }} <strong>To:</strong> {{ booking.flight.destination }}<br>
+            <strong>Date:</strong> {{ booking.flight.date }}<br>
+            <strong>Seat:</strong> {{ booking.seat_number }}<br>
+            <strong>Total Price:</strong> ${{ booking.flight.price }}
+        </p>
+        <a href="{% url 'dashboard' %}" class="btn btn-primary">
+            <i class="fas fa-tachometer-alt mr-2"></i>Go to Dashboard
+        </a>
+    </div>
+</div>
+{% endblock %}
