@@ -1,0 +1,57 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="text-center mb-4">
+    <h1>Welcome to SkyHigh Airlines</h1>
+    <p class="lead">Your journey begins with us!</p>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Search Flights</h5>
+                <form action="/search" method="get">
+                    <div class="mb-3">
+                        <label for="origin" class="form-label">From</label>
+                        <input type="text" class="form-control" id="origin" name="origin" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="destination" class="form-label">To</label>
+                        <input type="text" class="form-control" id="destination" name="destination" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="date" class="form-label">Departure Date</label>
+                        <input type="date" class="form-control" id="date" name="date" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Search</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Popular Destinations</h5>
+                <ul class="list-group">
+                    <li class="list-group-item">New York (JFK)</li>
+                    <li class="list-group-item">London (LHR)</li>
+                    <li class="list-group-item">Tokyo (NRT)</li>
+                    <li class="list-group-item">Paris (CDG)</li>
+                    <li class="list-group-item">Dubai (DXB)</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-4">
+    <h2>Why Choose SkyHigh Airlines?</h2>
+    <ul>
+        <li>Competitive prices</li>
+        <li>World-class service</li>
+        <li>Extensive route network</li>
+        <li>Modern fleet of aircraft</li>
+    </ul>
+</div>
+{% endblock %}

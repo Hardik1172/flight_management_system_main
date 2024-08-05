@@ -1,0 +1,27 @@
+{% extends "layout.html" %}
+{% block head %}
+    <link rel="stylesheet" href="/static/css/bookings_style.css">
+{% endblock %}
+
+{% block content %}
+
+
+<h1 class="mb-4">My Bookings</h1>
+
+<div class="list-group">
+    <div class="list-group-item">
+        <h5 class="mb-1">Booking #12345</h5>
+        <p class="mb-1"><strong>Flight:</strong> SH101 - New York (JFK) to London (LHR)</p>
+        <p class="mb-1"><strong>Date:</strong> June 15, 2024</p>
+        <p class="mb-1"><strong>Status:</strong> <span class="badge bg-success">Confirmed</span></p>
+        <a href="/ticket/12345" class="btn btn-sm btn-primary mt-2">View Ticket</a>
+    </div>
+    <div class="list-group-item">
+        <h5 class="mb-1">Booking #12346</h5>
+        <p class="mb-1"><strong>Flight:</strong> SH202 - London (LHR) to New York (JFK)</p>
+        <p class="mb-1"><strong>Date:</strong> June 22, 2024</p>
+        <p class="mb-1"><strong>Status:</strong> <span class="badge bg-warning text-dark">Pending Payment</span></p>
+        <a href="/payment/12346" class="btn btn-sm btn-warning mt-2">Complete Payment</a>
+    </div>
+</div>
+{% endblock %}

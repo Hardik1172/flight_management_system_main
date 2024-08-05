@@ -1,0 +1,23 @@
+.booking-item {
+    background-color: #fff;
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.booking-status {
+    font-weight: bold;
+}
+
+.status-confirmed {
+    color: #27ae60;
+}
+
+.status-pending {
+    color: #f39c12;
+}
+
+.booking-actions {
+    margin-top: 15px;
+}

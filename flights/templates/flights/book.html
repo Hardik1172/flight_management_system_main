@@ -1,0 +1,37 @@
+{% extends "layout.html" %}
+{% block head %}
+    <link rel="stylesheet" href="/static/css/book_style.css">
+{% endblock %}
+
+{% block content %}
+
+<h1 class="mb-4">Book Your Flight</h1>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title">Flight Details</h5>
+        <p><strong>Flight Number:</strong> SH101</p>
+        <p><strong>From:</strong> New York (JFK) <strong>To:</strong> London (LHR)</p>
+        <p><strong>Departure:</strong> 10:00 AM <strong>Arrival:</strong> 10:00 PM</p>
+        <p><strong>Duration:</strong> 7h 00m</p>
+        <p><strong>Price:</strong> $500</p>
+    </div>
+</div>
+
+<form action="/payment" method="post">
+    <h2>Passenger Information</h2>
+    <div class="mb-3">
+        <label for="name" class="form-label">Full Name</label>
+        <input type="text" class="form-control" id="name" name="name" required>
+    </div>
+    <div class="mb-3">
+        <label for="email" class="form-label">Email</label>
+        <input type="email" class="form-control" id="email" name="email" required>
+    </div>
+    <div class="mb-3">
+        <label for="phone" class="form-label">Phone Number</label>
+        <input type="tel" class="form-control" id="phone" name="phone" required>
+    </div>
+    <button type="submit" class="btn btn-primary">Proceed to Payment</button>
+</form>
+{% endblock %}

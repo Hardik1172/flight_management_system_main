@@ -1,104 +1,94 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth import login, authenticate
 from django.contrib.auth.decorators import login_required
-from django.contrib import messages
+from django.http import JsonResponse
+from django.views.decorators.http import require_http_methods
+from .models import Flight, Booking, Airport
+from .forms import CustomUserCreationForm, SearchForm, BookingForm
 from django.utils import timezone
-from .models import Flight, Booking
-from .forms import FlightSearchForm, BookingForm
-import random
 
+def index(request):
+    return render(request, 'flights/index.html')
 
-def home(request):
-    return render(request, 'flights/home.html')
-
-
-def search_flights(request):
+@require_http_methods(["GET", "POST"])
+def search(request):
     if request.method == 'POST':
-        form = FlightSearchForm(request.POST)
+        form = SearchForm(request.POST)
         if form.is_valid():
+            origin = form.cleaned_data['origin']
+            destination = form.cleaned_data['destination']
+            date = form.cleaned_data['date']
             flights = Flight.objects.filter(
-                source=form.cleaned_data['source'],
-                destination=form.cleaned_data['destination'],
-                date=form.cleaned_data['date']
+                origin__city__icontains=origin,
+                destination__city__icontains=destination,
+                departure_time__date=date
             )
-            return render(request, 'flights/flight_list.html', {'flights': flights})
+            return JsonResponse({'flights': list(flights.values())})
     else:
-        form = FlightSearchForm()
-    return render(request, 'flights/search_flights.html', {'form': form})
-
+        form = SearchForm()
+    return render(request, 'flights/search.html', {'form': form})
 
 @login_required
-def book_flight(request, flight_id):
-    flight = get_object_or_404(Flight, pk=flight_id)
+@require_http_methods(["GET", "POST"])
+def book(request, flight_id):
+    flight = get_object_or_404(Flight, id=flight_id)
     if request.method == 'POST':
         form = BookingForm(request.POST)
         if form.is_valid():
-            booking = form.save(commit=False)
-            booking.user = request.user
-            booking.flight = flight
-            booking.seat_number = f"{random.choice('ABCDEF')}{random.randint(1, 30)}"
-            booking.save()
-            flight.available_seats -= 1
-            flight.save()
-            return redirect('payment', booking_ids=booking.id)
+            if flight.available_seats > 0:
+                booking = Booking.objects.create(
+                    user=request.user,
+                    flight=flight,
+                    seat_number=form.cleaned_data['seat_number']
+                )
+                flight.available_seats -= 1
+                flight.save()
+                return JsonResponse({'success': True, 'booking_id': booking.id})
+            else:
+                return JsonResponse({'success': False, 'error': 'No available seats'})
     else:
         form = BookingForm()
-    return render(request, 'flights/book_flight.html', {'flight': flight, 'form': form})
-
-
-@login_required
-def dashboard(request):
-    bookings = Booking.objects.filter(user=request.user)
-    return render(request, 'flights/dashboard.html', {'bookings': bookings})
-
+    return render(request, 'book.html', {'form': form, 'flight': flight})
 
 @login_required
-def payment(request, booking_ids):
-    booking_id_list = booking_ids.split(',')
-    bookings = Booking.objects.filter(id__in=booking_id_list, user=request.user)
+def bookings(request):
+    user_bookings = Booking.objects.filter(user=request.user)
+    return render(request, 'flights/bookings.html', {'bookings': user_bookings})
 
-    if not bookings.exists():
-        messages.error(request, "No valid bookings found.")
-        return redirect('dashboard')
+def contact(request):
+    return render(request, 'flights/contact.html')
 
-    total_price = sum(booking.flight.price for booking in bookings)
-
+@require_http_methods(["GET", "POST"])
+def register(request):
     if request.method == 'POST':
-        # Process the payment here
-        # This is where you'd integrate with a payment gateway
-        # For now, we'll just mark the booking as paid
-        for booking in bookings:
-            booking.paid = True
-            booking.save()
-        messages.success(request, "Payment successful!")
-        return redirect('booking_confirmation', booking_ids=booking_ids)
+        form = CustomUserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            login(request, user)
+            return redirect('index')
+    else:
+        form = CustomUserCreationForm()
+    return render(request, 'flights/register.html', {'form': form})
 
-    return render(request, 'flights/payment.html', {
-        'bookings': bookings,
-        'total_price': total_price
-    })
+@login_required()
+def payment(request):
+    return render(request, 'flights/payment.html')
 
 @login_required
-def view_bookings(request):
-    return dashboard(request)
+def payment_process(request):
+    # Implement actual payment processing here
+    return JsonResponse({'success': True})
+
+def privacy_policy(request):
+    return render(request, 'flights/privacy_policy.html')
+
+def terms(request):
+    return render(request, 'flights/terms.html')
+
 @login_required
-def booking_confirmation(request, booking_ids):
-    booking_id_list = booking_ids.split(',')
-    bookings = Booking.objects.filter(id__in=booking_id_list, user=request.user, paid=True)
-
-    if not bookings.exists():
-        messages.error(request, "No confirmed bookings found.")
-        return redirect('dashboard')
-
-    return render(request, 'flights/booking_confirmation.html', {'bookings': bookings})
-
+def ticket(request, booking_id):
+    booking = get_object_or_404(Booking, id=booking_id, user=request.user)
+    return render(request, 'flights/ticket.html', {'booking': booking})
 
 def about(request):
     return render(request, 'flights/about.html')
-
-
-def contact(request):
-    if request.method == 'POST':
-        # Process contact form
-        messages.success(request, "Your message has been sent. We'll get back to you soon!")
-        return redirect('contact')
-    return render(request, 'flights/contact.html')

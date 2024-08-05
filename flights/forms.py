@@ -1,12 +1,19 @@
 from django import forms
-from .models import Flight, Booking
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.models import User
 
-class FlightSearchForm(forms.Form):
-    source = forms.CharField(max_length=100)
+class CustomUserCreationForm(UserCreationForm):
+    email = forms.EmailField(required=True)
+
+    class Meta:
+        model = User
+        fields = ("username", "email", "password1", "password2")
+
+class SearchForm(forms.Form):
+    origin = forms.CharField(max_length=100)
     destination = forms.CharField(max_length=100)
     date = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}))
+    passengers = forms.IntegerField(min_value=1, max_value=10)
 
-class BookingForm(forms.ModelForm):
-    class Meta:
-        model = Booking
-        fields = []  # We'll set the user and flight in the view
+class BookingForm(forms.Form):
+    seat_number = forms.CharField(max_length=5)

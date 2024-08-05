@@ -1,0 +1,80 @@
+[
+  {
+    "city": "New York",
+    "airport": "John F. Kennedy International Airport",
+    "code": "JFK",
+    "country": "United States"
+  },
+  {
+    "city": "London",
+    "airport": "Heathrow Airport",
+    "code": "LHR",
+    "country": "United Kingdom"
+  },
+  {
+    "city": "Tokyo",
+    "airport": "Narita International Airport",
+    "code": "NRT",
+    "country": "Japan"
+  },
+  {
+    "city": "Paris",
+    "airport": "Charles de Gaulle Airport",
+    "code": "CDG",
+    "country": "France"
+  },
+  {
+    "city": "Dubai",
+    "airport": "Dubai International Airport",
+    "code": "DXB",
+    "country": "United Arab Emirates"
+  },
+  {
+    "city": "Los Angeles",
+    "airport": "Los Angeles International Airport",
+    "code": "LAX",
+    "country": "United States"
+  },
+  {
+    "city": "Chicago",
+    "airport": "O'Hare International Airport",
+    "code": "ORD",
+    "country": "United States"
+  },
+  {
+    "city": "Beijing",
+    "airport": "Beijing Capital International Airport",
+    "code": "PEK",
+    "country": "China"
+  },
+  {
+    "city": "Sydney",
+    "airport": "Sydney Airport",
+    "code": "SYD",
+    "country": "Australia"
+  },
+  {
+    "city": "Frankfurt",
+    "airport": "Frankfurt Airport",
+    "code": "FRA",
+    "country": "Germany"
+  },
+  {
+    "city": "Singapore",
+    "airport": "Singapore Changi Airport",
+    "code": "SIN",
+    "country": "Singapore"
+  },
+  {
+    "city": "Hong Kong",
+    "airport": "Hong Kong International Airport",
+    "code": "HKG",
+    "country": "Hong Kong"
+  },
+  {
+    "city": "Amsterdam",
+    "airport": "Amsterdam Airport Schiphol",
+    "code": "AMS",
+    "country": "Netherlands"
+  }
+]
