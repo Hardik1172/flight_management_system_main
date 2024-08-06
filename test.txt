@@ -1,0 +1,105 @@
+To add images and improve the visual appeal of your SkyHigh Airlines website, you'll need to follow these steps:
+
+Create an images folder:
+First, create a folder called "images" inside your static directory. The path should look like this:
+
+Copyyour_project/
+    static/
+        css/
+        js/
+        images/
+
+Add background and other images:
+Place your desired background image and any other images (like logos, team member photos, etc.) in the images folder.
+Update CSS files:
+You'll need to update your CSS files to include the background image and style other elements. Here's an example of how to add a background image to your layout_style.css:
+
+body {
+    background-image: url('/static/images/sky_background.jpg');
+    background-size: cover;
+    background-attachment: fixed;
+    /* ... other existing styles ... */
+}
+
+Update HTML files:
+You'll need to update your HTML files to include images where appropriate. For example, in the about.html file, you can add team member photos:
+
+    <div class="team-member">
+    <img src="{% static 'images/ceo.jpg' %}" alt="CEO">
+    <h3>John Doe</h3>
+    <p>Chief Executive Officer</p>
+</div>
+
+Update layout.html:
+Make sure your layout.html file includes the necessary tags to load static files:
+
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- ... other head content ... -->
+    <link rel="stylesheet" href="{% static 'css/layout_style.css' %}">
+    <link rel="stylesheet" href="{% static 'css/style2.css' %}">
+    {% block additional_css %}{% endblock %}
+</head>
+<!-- ... rest of the layout ... -->
+
+Add a logo:
+You can add a logo to your navbar in layout.html:
+
+<nav class="navbar navbar-expand-lg navbar-dark">
+    <div class="container">
+        <a class="navbar-brand" href="/">
+            <img src="{% static 'images/skyhigh_logo.png' %}" alt="SkyHigh Airlines" height="30">
+        </a>
+        <!-- ... rest of the navbar ... -->
+    </div>
+</nav>
+
+Update other pages:
+Go through each of your HTML files (index.html, search.html, book.html, etc.) and add relevant images where appropriate. For example, you could add icons to your feature list on the homepage:
+
+   <div class="mt-4">
+    <h2>Why Choose SkyHigh Airlines?</h2>
+    <ul class="list-unstyled">
+        <li><img src="{% static 'images/price_icon.png' %}" alt="Price" width="20"> Competitive prices</li>
+        <li><img src="{% static 'images/service_icon.png' %}" alt="Service" width="20"> World-class service</li>
+        <li><img src="{% static 'images/network_icon.png' %}" alt="Network" width="20"> Extensive route network</li>
+        <li><img src="{% static 'images/aircraft_icon.png' %}" alt="Aircraft" width="20"> Modern fleet of aircraft</li>
+    </ul>
+</div>
+
+Optimize images:
+Make sure to optimize your images for web use. They should be appropriately sized and compressed to ensure fast loading times.
+Test responsiveness:
+After adding images, test your website on different screen sizes to ensure it remains responsive and looks good on all devices.
+Update views.py:
+If you're adding new data (like team member information) that needs to be passed to the templates, update your views accordingly. For example:
+
+   def about(request):
+    team_members = [
+        {'name': 'John Doe', 'position': 'CEO', 'image': 'images/ceo.jpg'},
+        {'name': 'Jane Smith', 'position': 'COO', 'image': 'images/coo.jpg'},
+        {'name': 'Mike Johnson', 'position': 'CFO', 'image': 'images/cfo.jpg'},
+    ]
+    return render(request, 'about.html', {'team_members': team_members})
+
+Update settings.py:
+Ensure your Django settings.py file is correctly configured to serve static files:
+
+pythonCopySTATIC_URL = '/static/'
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+]
+
+Run collectstatic:
+If you're deploying to a production environment, don't forget to run the collectstatic command:
+
+Copypython manage.py collectstatic
+By following these steps, you'll be able to add images to your project, making the background more attractive and improving the overall look of the website. Remember to choose high-quality, relevant images that c
+
+
+{% block body %}
+    <section class="privacybanner-section">
+        <img src="{% static 'img/icon_logo.png' %}" alt="Privacy Policy" class="privacybannerimg">
+    </section>

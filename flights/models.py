@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 
+
 class Airport(models.Model):
     code = models.CharField(max_length=3, unique=True)
     name = models.CharField(max_length=100)
@@ -10,6 +11,7 @@ class Airport(models.Model):
     def __str__(self):
         return f"{self.name} ({self.code})"
 
+
 class Flight(models.Model):
     flight_number = models.CharField(max_length=10)
     origin = models.ForeignKey(Airport, on_delete=models.CASCADE, related_name='departures')
@@ -18,8 +20,9 @@ class Flight(models.Model):
     arrival_time = models.DateTimeField()
     price = models.DecimalField(max_digits=10, decimal_places=2)
     available_seats = models.IntegerField(default=100)
+    is_international = models.BooleanField(default=False)
 
-    def __str__(self):
+def __str__(self):
         return f"{self.flight_number}: {self.origin} to {self.destination}"
 
 class Booking(models.Model):

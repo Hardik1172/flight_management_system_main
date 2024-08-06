@@ -2,13 +2,13 @@
 
 {% block content %}
 <div class="text-center mb-4">
-    <h1>Welcome to SkyHigh Airlines</h1>
-    <p class="lead">Your journey begins with us!</p>
+    <h1>Welcome to FlightBook App</h1>
+    <p class="lead">Lets book your ticket!</p>
 </div>
 
 <div class="row">
     <div class="col-md-6">
-        <div class="card">
+        <div class="card mb-4">
             <div class="card-body">
                 <h5 class="card-title">Search Flights</h5>
                 <form action="/search" method="get">
@@ -30,28 +30,53 @@
         </div>
     </div>
     <div class="col-md-6">
-        <div class="card">
+        <div class="card mb-4">
             <div class="card-body">
                 <h5 class="card-title">Popular Destinations</h5>
                 <ul class="list-group">
-                    <li class="list-group-item">New York (JFK)</li>
-                    <li class="list-group-item">London (LHR)</li>
-                    <li class="list-group-item">Tokyo (NRT)</li>
-                    <li class="list-group-item">Paris (CDG)</li>
-                    <li class="list-group-item">Dubai (DXB)</li>
+                    {% for airport in airports %}
+                    <li class="list-group-item">{{ airport.city }} ({{ airport.code }})</li>
+                    {% endfor %}
                 </ul>
             </div>
         </div>
     </div>
 </div>
 
+<div class="row">
+    <div class="col-md-6">
+        <h2>Popular Domestic Flights</h2>
+        <ul class="list-group">
+        {% for flight in domestic_flights %}
+            <li class="list-group-item">
+                {{ flight.flight_number }}: {{ flight.origin.city }} to {{ flight.destination.city }} - ${{ flight.price }}
+                <br>
+                <small>Departs: {{ flight.departure_time|date:"D H:i" }}, Arrives: {{ flight.arrival_time|date:"D H:i" }}</small>
+            </li>
+        {% endfor %}
+        </ul>
+    </div>
+    <div class="col-md-6">
+        <h2>Popular International Flights</h2>
+        <ul class="list-group">
+        {% for flight in international_flights %}
+            <li class="list-group-item">
+                {{ flight.flight_number }}: {{ flight.origin.city }} to {{ flight.destination.city }} - ${{ flight.price }}
+                <br>
+                <small>Departs: {{ flight.departure_time|date:"D H:i" }}, Arrives: {{ flight.arrival_time|date:"D H:i" }}</small>
+            </li>
+        {% endfor %}
+        </ul>
+    </div>
+</div>
+
 <div class="mt-4">
-    <h2>Why Choose SkyHigh Airlines?</h2>
+    <h2>Why Choose FlightBook Application?</h2>
     <ul>
-        <li>Competitive prices</li>
-        <li>World-class service</li>
-        <li>Extensive route network</li>
-        <li>Modern fleet of aircraft</li>
+        <li>Cheapest prices</li>
+        <li>Best offers</li>
+        <li>Best suggestions for your journey</li>
+        <li>Most easy process</li>
     </ul>
 </div>
 {% endblock %}

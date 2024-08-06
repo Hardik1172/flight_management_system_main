@@ -3,12 +3,23 @@ from django.contrib.auth import login, authenticate
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
-from .models import Flight, Booking, Airport
+from .models import  Booking
 from .forms import CustomUserCreationForm, SearchForm, BookingForm
-from django.utils import timezone
+from django.shortcuts import render
+from .models import Flight, Airport
+
 
 def index(request):
-    return render(request, 'flights/index.html')
+    domestic_flights = Flight.objects.filter(is_international=False)[:5]
+    international_flights = Flight.objects.filter(is_international=True)[:5]
+    airports = Airport.objects.all()[:5]
+    return render(request, 'flights/index.html', {
+        'domestic_flights': domestic_flights,
+        'international_flights': international_flights,
+        'airports': airports
+    })
+
+
 
 @require_http_methods(["GET", "POST"])
 def search(request):
@@ -48,7 +59,7 @@ def book(request, flight_id):
                 return JsonResponse({'success': False, 'error': 'No available seats'})
     else:
         form = BookingForm()
-    return render(request, 'book.html', {'form': form, 'flight': flight})
+    return render(request, 'flights/book.html', {'form': form, 'flight': flight})
 
 @login_required
 def bookings(request):
@@ -69,6 +80,8 @@ def register(request):
     else:
         form = CustomUserCreationForm()
     return render(request, 'flights/register.html', {'form': form})
+
+
 
 @login_required()
 def payment(request):

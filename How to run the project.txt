@@ -1,0 +1,353 @@
+
+Covil convil <convil.193@gmail.com>
+09:54 (3 hours ago)
+to me
+
+understand you need a comprehensive solution to make your project fully functional, especially the search feature. I'll provide you with the necessary changes and additions to make your project work as expected. Here's a step-by-step guide with all the changes you need to implement:
+
+Update views.py:
+Replace the content of your views.py file with the following:
+
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth import login, authenticate
+from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
+from django.views.decorators.http import require_http_methods
+from .models import Flight, Booking, Airport
+from .forms import CustomUserCreationForm, SearchForm, BookingForm
+from django.utils import timezone
+from django.db.models import Q
+
+def index(request):
+    domestic_flights = Flight.objects.filter(is_international=False)[:5]
+    international_flights = Flight.objects.filter(is_international=True)[:5]
+    airports = Airport.objects.all()[:5]
+    return render(request, 'index.html', {
+        'domestic_flights': domestic_flights,
+        'international_flights': international_flights,
+        'airports': airports
+    })
+
+@require_http_methods(["GET", "POST"])
+def search(request):
+    form = SearchForm(request.GET or request.POST or None)
+    if form.is_valid():
+        origin = form.cleaned_data['origin']
+        destination = form.cleaned_data['destination']
+        date = form.cleaned_data['date']
+        passengers = form.cleaned_data['passengers']
+
+        flights = Flight.objects.filter(
+            Q(origin__city__icontains=origin) | Q(origin__code__iexact=origin),
+            Q(destination__city__icontains=destination) | Q(destination__code__iexact=destination),
+            departure_time__date=date,
+            available_seats__gte=passengers
+        )
+
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'flights': list(flights.values('id', 'flight_number', 'origin__city', 'destination__city', 'departure_time', 'arrival_time', 'price', 'available_seats'))
+            })
+    else:
+        flights = []
+
+    return render(request, 'search.html', {'form': form, 'flights': flights})
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def book(request, flight_id):
+    flight = get_object_or_404(Flight, id=flight_id)
+    if request.method == 'POST':
+        form = BookingForm(request.POST)
+        if form.is_valid():
+            if flight.available_seats > 0:
+                booking = Booking.objects.create(
+                    user=request.user,
+                    flight=flight,
+                    seat_number=form.cleaned_data['seat_number']
+                )
+                flight.available_seats -= 1
+                flight.save()
+                return redirect('payment')
+            else:
+                form.add_error(None, 'No available seats for this flight.')
+    else:
+        form = BookingForm()
+    return render(request, 'book.html', {'form': form, 'flight': flight})
+
+@login_required
+def bookings(request):
+    user_bookings = Booking.objects.filter(user=request.user)
+    return render(request, 'bookings.html', {'bookings': user_bookings})
+
+def contact(request):
+    return render(request, 'contact.html')
+
+@require_http_methods(["GET", "POST"])
+def register(request):
+    if request.method == 'POST':
+        form = CustomUserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            login(request, user)
+            return redirect('index')
+    else:
+        form = CustomUserCreationForm()
+    return render(request, 'register.html', {'form': form})
+
+@login_required
+def payment(request):
+    return render(request, 'payment.html')
+
+@login_required
+def payment_process(request):
+    # Implement actual payment processing here
+    return JsonResponse({'success': True})
+
+def privacy_policy(request):
+    return render(request, 'privacy_policy.html')
+
+def terms(request):
+    return render(request, 'terms.html')
+
+@login_required
+def ticket(request, booking_id):
+    booking = get_object_or_404(Booking, id=booking_id, user=request.user)
+    return render(request, 'ticket.html', {'booking': booking})
+
+def about(request):
+    return render(request, 'about.html')
+
+Update forms.py:
+Replace the content of your forms.py file with the following:
+
+pythonCopyfrom django import forms
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.models import User
+
+class CustomUserCreationForm(UserCreationForm):
+    email = forms.EmailField(required=True)
+
+    class Meta:
+        model = User
+        fields = ("username", "email", "password1", "password2")
+
+class SearchForm(forms.Form):
+    origin = forms.CharField(max_length=100)
+    destination = forms.CharField(max_length=100)
+    date = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}))
+    passengers = forms.IntegerField(min_value=1, max_value=10)
+
+class BookingForm(forms.Form):
+    seat_number = forms.CharField(max_length=5)
+
+Update search.html:
+Replace the content of your search.html file with the following:
+
+htmlCopy{% extends "layout.html" %}
+{% load static %}
+
+{% block additional_css %}
+    <link rel="stylesheet" href="{% static 'css/search2_style.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mb-4">Search Flights</h1>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <form id="search-form" method="get">
+                {% csrf_token %}
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <label for="{{ form.origin.id_for_label }}" class="form-label">From</label>
+                        {{ form.origin }}
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="{{ form.destination.id_for_label }}" class="form-label">To</label>
+                        {{ form.destination }}
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="{{ form.date.id_for_label }}" class="form-label">Departure Date</label>
+                        {{ form.date }}
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="{{ form.passengers.id_for_label }}" class="form-label">Passengers</label>
+                        {{ form.passengers }}
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">Search Flights</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="search-results">
+        <h2>Search Results</h2>
+        <div class="list-group" id="results-container">
+            {% if flights %}
+                {% for flight in flights %}
+                    <a href="{% url 'book' flight.id %}" class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h5 class="mb-1">Flight {{ flight.flight_number }}: {{ flight.origin.city }} to {{ flight.destination.city }}</h5>
+                            <small>${{ flight.price }}</small>
+                        </div>
+                        <p class="mb-1">Departure: {{ flight.departure_time }} | Arrival: {{ flight.arrival_time }}</p>
+                        <small>Available Seats: {{ flight.available_seats }}</small>
+                    </a>
+                {% endfor %}
+            {% else %}
+                <p>No flights found matching your criteria.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/search.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchForm = document.getElementById('search-form');
+    const resultsContainer = document.getElementById('results-container');
+
+    searchForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData(searchForm);
+
+        fetch('{% url "search" %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            resultsContainer.innerHTML = '';
+            if (data.flights.length === 0) {
+                resultsContainer.innerHTML = '<p>No flights found matching your criteria.</p>';
+            } else {
+                data.flights.forEach(flight => {
+                    resultsContainer.innerHTML += `
+                        <a href="{% url 'book' 0 %}".replace('0', flight.id) class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h5 class="mb-1">Flight ${flight.flight_number}: ${flight.origin__city} to ${flight.destination__city}</h5>
+                                <small>$${flight.price}</small>
+                            </div>
+                            <p class="mb-1">Departure: ${new Date(flight.departure_time).toLocaleString()} | Arrival: ${new Date(flight.arrival_time).toLocaleString()}</p>
+                            <small>Available Seats: ${flight.available_seats}</small>
+                        </a>
+                    `;
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            resultsContainer.innerHTML = '<p>An error occurred while searching for flights. Please try again.</p>';
+        });
+    });
+});
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %}
+
+Update urls.py:
+Make sure your urls.py file includes all the necessary URL patterns:
+
+pythonCopyfrom django.urls import path
+from . import views
+from django.contrib.auth import views as auth_views
+
+urlpatterns = [
+    path('', views.index, name='index'),
+    path('search/', views.search, name='search'),
+    path('book/<int:flight_id>/', views.book, name='book'),
+    path('bookings/', views.bookings, name='bookings'),
+    path('contact/', views.contact, name='contact'),
+    path('login/', auth_views.LoginView.as_view(template_name='login.html'), name='login'),
+    path('logout/', auth_views.LogoutView.as_view(next_page='index'), name='logout'),
+    path('register/', views.register, name='register'),
+    path('payment/', views.payment, name='payment'),
+    path('payment/process/', views.payment_process, name='payment_process'),
+    path('privacy/', views.privacy_policy, name='privacy_policy'),
+    path('terms/', views.terms, name='terms'),
+    path('ticket/<int:booking_id>/', views.ticket, name='ticket'),
+    path('about/', views.about, name='about'),
+]
+
+Create a new file search.js in your static/js/ directory:
+Add the following content to search.js:
+
+javascriptCopy// This file is intentionally left empty as the search functionality is handled inline in the search.html template.
+// You can move the JavaScript code from search.html to this file if you prefer to keep it separate.
+
+Update book.html:
+Replace the content of your book.html file with the following:
+
+htmlCopy{% extends "layout.html" %}
+{% block head %}
+    <link rel="stylesheet" href="{% static 'css/book_style.css' %}">
+{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Book Your Flight</h1>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title">Flight Details</h5>
+        <p><strong>Flight Number:</strong> {{ flight.flight_number }}</p>
+        <p><strong>From:</strong> {{ flight.origin.city }} ({{ flight.origin.code }}) <strong>To:</strong> {{ flight.destination.city }} ({{ flight.destination.code }})</p>
+        <p><strong>Departure:</strong> {{ flight.departure_time }} <strong>Arrival:</strong> {{ flight.arrival_time }}</p>
+        <p><strong>Duration:</strong> {{ flight.duration }}</p>
+        <p><strong>Price:</strong> ${{ flight.price }}</p>
+    </div>
+</div>
+
+<form action="{% url 'book' flight.id %}" method="post">
+    {% csrf_token %}
+    <h2>Passenger Information</h2>
+    {{ form.as_p }}
+    <button type="submit" class="btn btn-primary">Proceed to Payment</button>
+</form>
+{% endblock %}
+
+Update models.py:
+Add the following method to your Flight model in models.py:
+
+pythonCopyfrom datetime import timedelta
+
+class Flight(models.Model):
+    # ... existing fields ...
+
+    @property
+    def duration(self):
+        duration = self.arrival_time - self.departure_time
+        hours, remainder = divmod(duration.total_seconds(), 3600)
+        minutes, _ = divmod(remainder, 60)
+        return f"{int(hours)}h {int(minutes)}m"
+These changes should make your project fully functional, including the search feature. The search button will now work, and it will display search results dynamically without reloading the page. Other buttons like privacy and contact us should continue to work as before.
+To ensure everything is working correctly:
+
+Make sure your database is populated with flight data.
+Run your Django development server.
+Test the search functionality by entering origin, destination, date, and number of passengers.
+Try booking a flight and going through the payment process.
+Check that all other pages (about, contact, privacy policy, etc.) are accessible and working.
+
+If you encounter any issues or need further assistance, please let me know. CopyRetryClaude can make mistakes. Please double-check responses.
