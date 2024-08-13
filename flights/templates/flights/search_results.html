@@ -10,7 +10,8 @@
             <h5 class="mb-1">Flight {{ flight.flight_number }}</h5>
             <p class="mb-1">From: {{ flight.origin.city }} ({{ flight.origin.code }}) To: {{ flight.destination.city }} ({{ flight.destination.code }})</p>
             <p class="mb-1">Departure: {{ flight.departure_time|date:"D H:i" }} Arrival: {{ flight.arrival_time|date:"D H:i" }}</p>
-            <p class="mb-1">Price: ${{ flight.price }}</p>
+            <p class="mb-1">Economy Price: ₹{{ flight.economy_price }}</p>
+            <p class=" mb-1">Business Price: ₹{{flight.business_price}}</p>
             <p class="mb-1">Available Seats: {{ flight.available_seats }}</p>
             <a href="{% url 'book' flight.id %}" class="btn btn-primary">Book Now</a>
         </div>

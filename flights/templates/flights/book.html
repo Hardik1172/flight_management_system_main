@@ -10,8 +10,8 @@
         <p><strong>From:</strong> {{ flight.origin.city }} ({{ flight.origin.code }}) <strong>To:</strong> {{ flight.destination.city }} ({{ flight.destination.code }})</p>
         <p><strong>Departure:</strong> {{ flight.departure_time|date:"F d, Y H:i" }}</p>
         <p><strong>Arrival:</strong> {{ flight.arrival_time|date:"F d, Y H:i" }}</p>
-        <p><strong>Economy Price:</strong> ${{ flight.economy_price }}</p>
-        <p><strong>Business Price:</strong> ${{ flight.business_price }}</p>
+        <p><strong>Economy Price:</strong> ₹{{ flight.economy_price }}</p>
+        <p><strong>Business Price:</strong> ₹{{ flight.business_price }}</p>
         <p><strong>Available Seats:</strong> {{ flight.available_seats }}</p>
     </div>
 </div>

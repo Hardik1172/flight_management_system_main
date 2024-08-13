@@ -1,10 +1,5 @@
 # flights/views.py
 
-
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages
-from .models import Flight, Booking, Payment
 from .forms import SearchForm, BookingForm, PaymentForm
 from django.contrib.auth import login, authenticate, logout
 from django.shortcuts import render, redirect, get_object_or_404
@@ -43,7 +38,7 @@ def search(request):
             date = form.cleaned_data['date']
             passengers = form.cleaned_data['passengers']
 
-            flights = Flight.objects.filter(
+            flights = Flight.filter(
                 origin=origin,
                 destination=destination,
                 departure_time__date=date,
@@ -89,10 +84,14 @@ def bookings(request):
     bookings = Booking.objects.filter(user=request.user)
     return render(request, 'flights/bookings.html', {'bookings': bookings})
 
+
+
+
+
 @login_required
 def add_flight(request):
     if request.method == 'POST':
-        form = FlightForm(request.POST)
+        form = FlightForm(request.Post)
         if form.is_valid():
             flight = form.save(commit=False)
             flight.added_by = request.user
@@ -106,7 +105,7 @@ def add_flight(request):
     return render(request, 'flights/add_flight.html', {'form': form})
 
 def contact(request):
-    return render(request, 'flights/contact.html')
+    return render(request, 'contact.html')
 
 def register(request):
     if request.method == 'POST':

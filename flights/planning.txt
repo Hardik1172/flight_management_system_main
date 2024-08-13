@@ -1,0 +1,5 @@
+price should be displayed both business and economy
+
+duration of flight should be shown .
+
+filter button on basis of price and duration .
