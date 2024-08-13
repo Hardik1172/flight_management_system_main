@@ -38,7 +38,7 @@ def search(request):
             date = form.cleaned_data['date']
             passengers = form.cleaned_data['passengers']
 
-            flights = Flight.filter(
+            flights = Flight.objects.filter(
                 origin=origin,
                 destination=destination,
                 departure_time__date=date,
@@ -105,7 +105,8 @@ def add_flight(request):
     return render(request, 'flights/add_flight.html', {'form': form})
 
 def contact(request):
-    return render(request, 'contact.html')
+    return render(request, 'flights/contact.html')
+
 
 def register(request):
     if request.method == 'POST':

@@ -1,4 +1,4 @@
-price should be displayed both business and economy
+
 
 duration of flight should be shown .
 
