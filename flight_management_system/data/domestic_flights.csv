@@ -1,6 +1,0 @@
-origin,destination,depart_time,depart_weekday,duration,arrival_time,arrival_weekday,flight_no,airline_code,airline,economy_fare,business_fare,first_fare
-JFK,LAX,08:00,Monday,06:00,14:00,Monday,DL123,DL,Delta Airlines,250.00,500.00,750.00
-ORD,ATL,10:30,Tuesday,02:15,12:45,Tuesday,UA456,UA,United Airlines,180.00,350.00,550.00
-DFW,SFO,14:45,Wednesday,04:30,19:15,Wednesday,AA789,AA,American Airlines,220.00,450.00,680.00
-LAX,JFK,07:00,Thursday,05:30,15:30,Thursday,B6101,B6,JetBlue,280.00,550.00,800.00
-SEA,DEN,11:15,Friday,02:45,14:00,Friday,AS234,AS,Alaska Airlines,190.00,380.00,600.00

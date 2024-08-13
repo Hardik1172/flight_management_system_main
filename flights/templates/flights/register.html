@@ -6,32 +6,14 @@
         <div class="card">
             <div class="card-body">
                 <h1 class="card-title text-center mb-4">Register</h1>
-                <form action="/register" method="post">
-                    <div class="mb-3">
-                        <label for="full_name" class="form-label">Full Name</label>
-                        <input type="text" class="form-control" id="full_name" name="full_name" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="email" class="form-label">Email Address</label>
-                        <input type="email" class="form-control" id="email" name="email" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="password" class="form-label">Password</label>
-                        <input type="password" class="form-control" id="password" name="password" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="confirm_password" class="form-label">Confirm Password</label>
-                        <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
-                    </div>
-                    <div class="mb-3 form-check">
-                        <input type="checkbox" class="form-check-input" id="agree_terms" name="agree_terms" required>
-                        <label class="form-check-label" for="agree_terms">I agree to the <a href="/terms">Terms of Service</a> and <a href="/privacy">Privacy Policy</a></label>
-                    </div>
+                <form method="post">
+                    {% csrf_token %}
+                    {{ form.as_p }}
                     <button type="submit" class="btn btn-primary w-100">Register</button>
                 </form>
                 <hr>
                 <div class="text-center">
-                    <p>Already have an account? <a href="/login">Login here</a></p>
+                    <p>Already have an account? <a href="{% url 'login' %}">Login here</a></p>
                 </div>
             </div>
         </div>

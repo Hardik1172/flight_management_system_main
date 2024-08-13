@@ -1,6 +1,0 @@
-origin,destination,depart_time,depart_weekday,duration,arrival_time,arrival_weekday,flight_no,airline_code,airline,economy_fare,business_fare,first_fare
-JFK,LHR,22:00,Friday,07:00,10:00,Saturday,BA001,BA,British Airways,500.00,1500.00,3000.00
-CDG,DXB,14:30,Saturday,06:30,23:00,Saturday,AF002,AF,Air France,600.00,1800.00,3500.00
-SIN,SYD,09:15,Sunday,08:00,20:15,Sunday,SQ003,SQ,Singapore Airlines,450.00,1300.00,2800.00
-LAX,NRT,11:45,Monday,11:30,15:15,Tuesday,NH004,NH,All Nippon Airways,700.00,2000.00,4000.00
-FRA,JFK,13:00,Wednesday,08:30,16:30,Wednesday,LH005,LH,Lufthansa,550.00,1600.00,3200.00

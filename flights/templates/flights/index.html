@@ -49,7 +49,8 @@
         <ul class="list-group">
         {% for flight in domestic_flights %}
             <li class="list-group-item">
-                {{ flight.flight_number }}: {{ flight.origin.city }} to {{ flight.destination.city }} - ${{ flight.price }}
+                {{ flight.flight_number }}: {{ flight.origin.city }} to {{ flight.destination.city }}
+                - Economy: ${{ flight.economy_price }}, Business: ${{ flight.business_price }}
                 <br>
                 <small>Departs: {{ flight.departure_time|date:"D H:i" }}, Arrives: {{ flight.arrival_time|date:"D H:i" }}</small>
             </li>
@@ -61,7 +62,8 @@
         <ul class="list-group">
         {% for flight in international_flights %}
             <li class="list-group-item">
-                {{ flight.flight_number }}: {{ flight.origin.city }} to {{ flight.destination.city }} - ${{ flight.price }}
+                {{ flight.flight_number }}: {{ flight.origin.city }} to {{ flight.destination.city }}
+                - Economy: ${{ flight.economy_price }}, Business: ${{ flight.business_price }}
                 <br>
                 <small>Departs: {{ flight.departure_time|date:"D H:i" }}, Arrives: {{ flight.arrival_time|date:"D H:i" }}</small>
             </li>

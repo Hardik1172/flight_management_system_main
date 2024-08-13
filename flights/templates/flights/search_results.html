@@ -1,0 +1,24 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<h1 class="mb-4">Search Results</h1>
+
+{% if flights %}
+    <div class="list-group">
+    {% for flight in flights %}
+        <div class="list-group-item">
+            <h5 class="mb-1">Flight {{ flight.flight_number }}</h5>
+            <p class="mb-1">From: {{ flight.origin.city }} ({{ flight.origin.code }}) To: {{ flight.destination.city }} ({{ flight.destination.code }})</p>
+            <p class="mb-1">Departure: {{ flight.departure_time|date:"D H:i" }} Arrival: {{ flight.arrival_time|date:"D H:i" }}</p>
+            <p class="mb-1">Price: ${{ flight.price }}</p>
+            <p class="mb-1">Available Seats: {{ flight.available_seats }}</p>
+            <a href="{% url 'book' flight.id %}" class="btn btn-primary">Book Now</a>
+        </div>
+    {% endfor %}
+    </div>
+{% else %}
+    <p>No flights found matching your criteria. Please try a different search.</p>
+{% endif %}
+
+<a href="{% url 'search' %}" class="btn btn-secondary mt-3">New Search</a>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<h1 class="mb-4">Booking Confirmation</h1>
+
+<div class="alert alert-success" role="alert">
+    Your booking has been confirmed!
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title">Booking Details</h5>
+        <p>Passenger Name: {{ booking.passenger_name }}</p>
+        <p>Email: {{ booking.email }}</p>
+        <p>Flight Number: {{ booking.flight.flight_number }}</p>
+        <p>From: {{ booking.flight.origin.city }} ({{ booking.flight.origin.code }}) To: {{ booking.flight.destination.city }} ({{ booking.flight.destination.code }})</p>
+        <p>Departure: {{ booking.flight.departure_time }} Arrival: {{ booking.flight.arrival_time }}</p>
+        <p>Number of Seats: {{ booking.seats }}</p>
+        <p>Seat Number: {{ booking.seat_number }}</p>
+        <p>Total Price: ${{ booking.total_price }}</p>
+    </div>
+</div>
+
+<a href="{% url 'index' %}" class="btn btn-primary">Return to Home</a>
+{% endblock %}

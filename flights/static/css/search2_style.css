@@ -12,14 +12,29 @@
     border-radius: 5px;
 }
 
-.flight-item {
+.list-group-item {
     background-color: #fff;
     padding: 15px;
     margin-bottom: 15px;
     border-radius: 5px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: background-color 0.3s ease;
 }
 
-.flight-item:hover {
+.list-group-item:hover {
     background-color: #f0f0f0;
+}
+
+.form-label {
+    font-weight: bold;
+}
+
+.btn-primary {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+.btn-primary:hover {
+    background-color: #0056b3;
+    border-color: #0056b3;
 }

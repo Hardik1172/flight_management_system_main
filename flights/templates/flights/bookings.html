@@ -1,27 +1,27 @@
 {% extends "layout.html" %}
-{% block head %}
-    <link rel="stylesheet" href="/static/css/bookings_style.css">
-{% endblock %}
 
 {% block content %}
-
-
 <h1 class="mb-4">My Bookings</h1>
 
-<div class="list-group">
-    <div class="list-group-item">
-        <h5 class="mb-1">Booking #12345</h5>
-        <p class="mb-1"><strong>Flight:</strong> SH101 - New York (JFK) to London (LHR)</p>
-        <p class="mb-1"><strong>Date:</strong> June 15, 2024</p>
-        <p class="mb-1"><strong>Status:</strong> <span class="badge bg-success">Confirmed</span></p>
-        <a href="/ticket/12345" class="btn btn-sm btn-primary mt-2">View Ticket</a>
-    </div>
-    <div class="list-group-item">
-        <h5 class="mb-1">Booking #12346</h5>
-        <p class="mb-1"><strong>Flight:</strong> SH202 - London (LHR) to New York (JFK)</p>
-        <p class="mb-1"><strong>Date:</strong> June 22, 2024</p>
-        <p class="mb-1"><strong>Status:</strong> <span class="badge bg-warning text-dark">Pending Payment</span></p>
-        <a href="/payment/12346" class="btn btn-sm btn-warning mt-2">Complete Payment</a>
+{% for booking in bookings %}
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title">Booking Details</h5>
+        <p><strong>Passenger Name:</strong> {{ booking.passenger_name }}</p>
+        <p><strong>Email:</strong> {{ booking.email }}</p>
+        <p><strong>Flight Number:</strong> {{ booking.flight.flight_number }}</p>
+        <p><strong>From:</strong> {{ booking.flight.origin.city }} ({{ booking.flight.origin.code }}) <strong>To:</strong> {{ booking.flight.destination.city }} ({{ booking.flight.destination.code }})</p>
+        <p><strong>Departure:</strong> {{ booking.flight.departure_time }} <strong>Arrival:</strong> {{ booking.flight.arrival_time }}</p>
+        <p><strong>Ticket Class:</strong> {{ booking.get_ticket_class_display }}</p>
+        <p><strong>Food Choice:</strong> {{ booking.get_food_choice_display }}</p>
+        <p><strong>Number of Seats:</strong> {{ booking.seats }}</p>
+        <p><strong>Total Price:</strong> ${{ booking.total_price }}</p>
+        <p><strong>Status:</strong> {{ booking.status }}</p>
     </div>
 </div>
+{% empty %}
+<p>You have no bookings yet.</p>
+{% endfor %}
+
+<a href="{% url 'index' %}" class="btn btn-primary">Back to Home</a>
 {% endblock %}

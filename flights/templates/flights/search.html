@@ -9,25 +9,25 @@
 <div class="container">
     <h1 class="mb-4">Search Flights</h1>
 
-    <div class="card mb-4">
+    <div class="card mb-4 search-form">
         <div class="card-body">
-            <form id="search-form" method="post">
+            <form id="search-form" method="post" action="{% url 'search' %}">
                 {% csrf_token %}
                 <div class="row">
                     <div class="col-md-3 mb-3">
-                        <label for="{{ form.origin.id_for_label }}" class="form-label">From</label>
+                        {{ form.origin.label_tag }}
                         {{ form.origin }}
                     </div>
                     <div class="col-md-3 mb-3">
-                        <label for="{{ form.destination.id_for_label }}" class="form-label">To</label>
+                        {{ form.destination.label_tag }}
                         {{ form.destination }}
                     </div>
                     <div class="col-md-3 mb-3">
-                        <label for="{{ form.date.id_for_label }}" class="form-label">Departure Date</label>
+                        {{ form.date.label_tag }}
                         {{ form.date }}
                     </div>
                     <div class="col-md-3 mb-3">
-                        <label for="{{ form.passengers.id_for_label }}" class="form-label">Passengers</label>
+                        {{ form.passengers.label_tag }}
                         {{ form.passengers }}
                     </div>
                 </div>
@@ -36,73 +36,29 @@
         </div>
     </div>
 
-    <div id="search-results">
-        <h2>Search Results</h2>
-        <div class="list-group" id="results-container">
-            <!-- Flight results will be dynamically inserted here -->
+    {% if error_message %}
+    <div class="alert alert-danger" role="alert">
+        {{ error_message }}
+    </div>
+    {% endif %}
+
+    {% if flights %}
+    <div id="search-results" class="search-results">
+        <div class="list-group">
+        {% for flight in flights %}
+            <div class="list-group-item">
+                <h5 class="mb-1">Flight {{ flight.flight_number }}</h5>
+                <p class="mb-1">From: {{ flight.origin.city }} ({{ flight.origin.code }}) To: {{ flight.destination.city }} ({{ flight.destination.code }})</p>
+                <p class="mb-1">Departure: {{ flight.departure_time|date:"D H:i" }} Arrival: {{ flight.arrival_time|date:"D H:i" }}</p>
+                <p class="mb-1">Price: ${{ flight.price }}</p>
+                <p class="mb-1">Available Seats: {{ flight.available_seats }}</p>
+                <a href="{% url 'book' flight.id %}" class="btn btn-primary">Book Now</a>
+            </div>
+        {% endfor %}
         </div>
     </div>
+    {% else %}
+    <p>No flights found matching your criteria. Please try a different search.</p>
+    {% endif %}
 </div>
-{% endblock %}
-
-{% block scripts %}
-<script src="{% static 'js/search.js' %}"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const searchForm = document.getElementById('search-form');
-    const resultsContainer = document.getElementById('results-container');
-
-    searchForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        const formData = new FormData(searchForm);
-
-        fetch('{% url "search" %}', {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-CSRFToken': getCookie('csrftoken')
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            resultsContainer.innerHTML = '';
-            if (data.flights.length === 0) {
-                resultsContainer.innerHTML = '<p>No flights found matching your criteria.</p>';
-            } else {
-                data.flights.forEach(flight => {
-                    resultsContainer.innerHTML += `
-                        <a href="{% url 'book' 0 %}".replace('0', flight.id) class="list-group-item list-group-item-action">
-                            <div class="d-flex w-100 justify-content-between">
-                                <h5 class="mb-1">Flight ${flight.flight_number}: ${flight.origin__city} to ${flight.destination__city}</h5>
-                                <small>$${flight.price}</small>
-                            </div>
-                            <p class="mb-1">Departure: ${new Date(flight.departure_time).toLocaleString()} | Arrival: ${new Date(flight.arrival_time).toLocaleString()}</p>
-                            <small>Available Seats: ${flight.available_seats}</small>
-                        </a>
-                    `;
-                });
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            resultsContainer.innerHTML = '<p>An error occurred while searching for flights. Please try again.</p>';
-        });
-    });
-});
-
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
-    }
-    return cookieValue;
-}
-</script>
 {% endblock %}
