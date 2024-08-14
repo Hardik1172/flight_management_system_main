@@ -50,9 +50,9 @@
         {% for flight in domestic_flights %}
             <li class="list-group-item">
                 {{ flight.flight_number }}: {{ flight.origin.city }} to {{ flight.destination.city }}
-                - Economy: ${{ flight.economy_price }}, Business: ${{ flight.business_price }}
+                - Economy Class: ₹{{ flight.economy_price }}, Business Class: ₹{{ flight.business_price }}
                 <br>
-                <small>Departs: {{ flight.departure_time|date:"D H:i" }}, Arrives: {{ flight.arrival_time|date:"D H:i" }}</small>
+                <small>Departs: {{ flight.departure_time|date:"D H:i" }}, Arrives: {{ flight.arrival_time|date:"D H:i" }}, Duration: {{flight.duration}}</small>
             </li>
         {% endfor %}
         </ul>
@@ -63,9 +63,9 @@
         {% for flight in international_flights %}
             <li class="list-group-item">
                 {{ flight.flight_number }}: {{ flight.origin.city }} to {{ flight.destination.city }}
-                - Economy: ${{ flight.economy_price }}, Business: ${{ flight.business_price }}
+                - Economy Class: ₹{{ flight.economy_price }}, Business Class: ₹{{ flight.business_price }}
                 <br>
-                <small>Departs: {{ flight.departure_time|date:"D H:i" }}, Arrives: {{ flight.arrival_time|date:"D H:i" }}</small>
+                <small>Departs: {{ flight.departure_time|date:"D H:i" }}, Arrives: {{ flight.arrival_time|date:"D H:i" }} , Duration: {{flight.duration}}</small>
             </li>
         {% endfor %}
         </ul>

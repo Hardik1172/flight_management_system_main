@@ -8,58 +8,69 @@
 {% block content %}
 <div class="container">
     <h1 class="mb-4">Search Flights</h1>
+    <div/>
+    <small>Adults - 12+ , Children = 2-12 Age, Infants - Below 2 years </small>
+    <small> For Adults regular prices, For Children 30% Discount, For Infants 50% Discount</small>
+    <div/>
 
     <div class="card mb-4 search-form">
         <div class="card-body">
             <form id="search-form" method="post" action="{% url 'search' %}">
                 {% csrf_token %}
                 <div class="row">
-                    <div class="col-md-3 mb-3">
+                    <div class="col-md-12 mb-3">
+                        {{ form.trip_type.label_tag }}
+                        {{ form.trip_type }}
+                    </div>
+                    <div class="col-md-6 mb-3">
                         {{ form.origin.label_tag }}
                         {{ form.origin }}
                     </div>
-                    <div class="col-md-3 mb-3">
+                    <div class="col-md-6 mb-3">
                         {{ form.destination.label_tag }}
                         {{ form.destination }}
                     </div>
-                    <div class="col-md-3 mb-3">
-                        {{ form.date.label_tag }}
-                        {{ form.date }}
+                    <div class="col-md-6 mb-3">
+                        {{ form.departure_date.label_tag }}
+                        {{ form.departure_date }}
                     </div>
-                    <div class="col-md-3 mb-3">
-                        {{ form.passengers.label_tag }}
-                        {{ form.passengers }}
+                    <div class="col-md-6 mb-3" id="return-date-field" style="display:none;">
+                        {{ form.return_date.label_tag }}
+                        {{ form.return_date }}
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        {{ form.adults.label_tag }}
+                        {{ form.adults }}
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        {{ form.children.label_tag }}
+                        {{ form.children }}
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        {{ form.infants.label_tag }}
+                        {{ form.infants }}
                     </div>
                 </div>
                 <button type="submit" class="btn btn-primary">Search Flights</button>
             </form>
         </div>
     </div>
-
-    {% if error_message %}
-    <div class="alert alert-danger" role="alert">
-        {{ error_message }}
-    </div>
-    {% endif %}
-
-    {% if flights %}
-    <div id="search-results" class="search-results">
-        <div class="list-group">
-        {% for flight in flights %}
-            <div class="list-group-item">
-                <h5 class="mb-1">Flight {{ flight.flight_number }}</h5>
-                <p class="mb-1">From: {{ flight.origin.city }} ({{ flight.origin.code }}) To: {{ flight.destination.city }} ({{ flight.destination.code }})</p>
-                <p class="mb-1">Departure: {{ flight.departure_time|date:"D H:i" }} Arrival: {{ flight.arrival_time|date:"D H:i" }}</p>
-                <p class="mb-1">Price: ₹{{ flight.economy_price }}</p>
-                <p class="mb-1">Price: ₹{{ flight.business_price }}</p>
-                <p class="mb-1">Available Seats: {{ flight.available_seats }}</p>
-                <a href="{% url 'book' flight.id %}" class="btn btn-primary">Book Now</a>
-            </div>
-        {% endfor %}
-        </div>
-    </div>
-    {% else %}
-    <p>No flights found matching your criteria. Please try a different search.</p>
-    {% endif %}
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const tripTypeRadios = document.querySelectorAll('input[name="trip_type"]');
+        const returnDateField = document.getElementById('return-date-field');
+
+        tripTypeRadios.forEach(radio => {
+            radio.addEventListener('change', function() {
+                if (this.value === 'round_trip') {
+                    returnDateField.style.display = 'block';
+                } else {
+                    returnDateField.style.display = 'none';
+                }
+            });
+        });
+    });
+</script>
 {% endblock %}

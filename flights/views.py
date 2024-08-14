@@ -15,11 +15,17 @@ from django.utils import timezone
 from django.contrib import messages
 from django.shortcuts import render, redirect
 from .forms import FlightForm
+from datetime import timedelta
+from django.shortcuts import render
+from .forms import SearchForm
+from .models import Flight
+from django.contrib import messages
+from datetime import timedelta
 
 logger = logging.getLogger(__name__)
 
 def index(request):
-    airports = Airport.objects.all()[:5]  # Get 5 popular airports
+    airports = Airport.objects.all()[:5]
     domestic_flights = Flight.objects.filter(is_international=False)[:5]
     international_flights = Flight.objects.filter(is_international=True)[:5]
     return render(request, 'flights/index.html', {
@@ -28,56 +34,101 @@ def index(request):
         'international_flights': international_flights
     })
 
-@require_http_methods(["GET", "POST"])
+
 def search(request):
     if request.method == 'POST':
         form = SearchForm(request.POST)
         if form.is_valid():
             origin = form.cleaned_data['origin']
             destination = form.cleaned_data['destination']
-            date = form.cleaned_data['date']
-            passengers = form.cleaned_data['passengers']
+            departure_date = form.cleaned_data['departure_date']
+            return_date = form.cleaned_data.get('return_date')
+            adults = form.cleaned_data['adults']
+            children = form.cleaned_data['children']
+            infants = form.cleaned_data['infants']
+            trip_type = form.cleaned_data['trip_type']
 
-            flights = Flight.objects.filter(
+            total_passengers = adults + children + infants
+
+            outbound_flights = Flight.objects.filter(
                 origin=origin,
                 destination=destination,
-                departure_time__date=date,
-                available_seats__gte=passengers
-
+                departure_time__date=departure_date,
+                available_seats__gte=total_passengers
             )
 
-            if not flights:
-                messages.info(request, "No flights found matching your criteria.")
+            return_flights = None
+            if trip_type == 'round_trip' and return_date:
+                return_flights = Flight.objects.filter(
+                    origin=destination,
+                    destination=origin,
+                    departure_time__date=return_date,
+                    available_seats__gte=total_passengers
+                )
 
-            return render(request, 'flights/search_results.html', {'flights': flights, 'form': form})
+            if not outbound_flights:
+                messages.info(request, "No outbound flights found matching your criteria.")
+            elif trip_type == 'round_trip' and not return_flights:
+                messages.info(request, "No return flights found on the specified date.")
+
+            context = {
+                'form': form,
+                'outbound_flights': outbound_flights,
+                'return_flights': return_flights,
+                'adults': adults,
+                'children': children,
+                'infants': infants,
+                'trip_type': trip_type
+            }
+
+            return render(request, 'flights/search_results.html', context)
     else:
         form = SearchForm()
 
     return render(request, 'flights/search.html', {'form': form})
 
 
-
-
 @login_required
-def book(request, flight_id):
+def book(request, flight_id, return_flight_id=None):
     flight = get_object_or_404(Flight, pk=flight_id)
+    return_flight = None
+    if return_flight_id:
+        return_flight = get_object_or_404(Flight, pk=return_flight_id)
+
     if request.method == 'POST':
         form = BookingForm(request.POST)
         if form.is_valid():
             booking = form.save(commit=False)
             booking.user = request.user
             booking.flight = flight
-            if booking.seats <= flight.available_seats:
+            if return_flight:
+                booking.return_flight = return_flight
+
+
+            total_passengers = booking.adults + booking.children + booking.infants
+
+            if total_passengers <= flight.available_seats and (
+                    not return_flight or total_passengers <= return_flight.available_seats):
                 booking.save()
-                flight.available_seats -= booking.seats
+                flight.available_seats -= total_passengers
                 flight.save()
+                if return_flight:
+                    return_flight.available_seats -= total_passengers
+                    return_flight.save()
                 messages.success(request, 'Booking created successfully.')
                 return redirect('payment', booking_id=booking.id)
             else:
                 messages.error(request, 'Not enough seats available.')
     else:
         form = BookingForm()
-    return render(request, 'flights/book.html', {'form': form, 'flight': flight})
+
+    context = {
+        'form': form,
+        'flight': flight,
+        'return_flight': return_flight
+    }
+    return render(request, 'flights/book.html', context)
+
 
 @login_required
 def bookings(request):
@@ -87,11 +138,10 @@ def bookings(request):
 
 
 
-
 @login_required
 def add_flight(request):
     if request.method == 'POST':
-        form = FlightForm(request.Post)
+        form = FlightForm(request.POST)
         if form.is_valid():
             flight = form.save(commit=False)
             flight.added_by = request.user
@@ -103,6 +153,123 @@ def add_flight(request):
     else:
         form = FlightForm()
     return render(request, 'flights/add_flight.html', {'form': form})
+
+def search(request):
+    if request.method == 'POST':
+        form = SearchForm(request.POST)
+        if form.is_valid():
+            origin = form.cleaned_data['origin']
+            destination = form.cleaned_data['destination']
+            departure_date = form.cleaned_data['departure_date']
+            return_date = form.cleaned_data.get('return_date')
+            adults = form.cleaned_data['adults']
+            children = form.cleaned_data['children']
+            infants = form.cleaned_data['infants']
+            trip_type = form.cleaned_data['trip_type']
+
+            total_passengers = adults + children + infants
+
+            outbound_flights = Flight.objects.filter(
+                origin=origin,
+                destination=destination,
+                departure_time__date=departure_date,
+                available_seats__gte=total_passengers
+            )
+
+            return_flights = None
+            if trip_type == 'round_trip' and return_date:
+                return_flights = Flight.objects.filter(
+                    origin=destination,
+                    destination=origin,
+                    departure_time__date=return_date,
+                    available_seats__gte=total_passengers
+                )
+
+            if not outbound_flights:
+                messages.info(request, "No outbound flights found matching your criteria.")
+            elif trip_type == 'round_trip' and not return_flights:
+                messages.info(request, "No return flights found on the specified date.")
+
+            context = {
+                'form': form,
+                'outbound_flights': outbound_flights,
+                'return_flights': return_flights,
+                'adults': adults,
+                'children': children,
+                'infants': infants,
+                'trip_type': trip_type
+            }
+
+            return render(request, 'flights/search_results.html', context)
+    else:
+        form = SearchForm()
+
+    return render(request, 'flights/search.html', {'form': form})
+
+
+@login_required
+def book(request, flight_id, return_flight_id=None):
+    flight = get_object_or_404(Flight, pk=flight_id)
+    return_flight = None
+    if return_flight_id:
+        return_flight = get_object_or_404(Flight, pk=return_flight_id)
+
+    if request.method == 'POST':
+        form = BookingForm(request.POST)
+        if form.is_valid():
+            booking = form.save(commit=False)
+            booking.user = request.user
+            booking.flight = flight
+            if return_flight:
+                booking.return_flight = return_flight
+
+            total_passengers = booking.adults + booking.children + booking.infants
+
+            if total_passengers <= flight.available_seats and (
+                    not return_flight or total_passengers <= return_flight.available_seats):
+                booking.save()
+                flight.available_seats -= total_passengers
+                flight.save()
+                if return_flight:
+                    return_flight.available_seats -= total_passengers
+                    return_flight.save()
+                messages.success(request, 'Booking created successfully.')
+                return redirect('payment', booking_id=booking.id)
+            else:
+                messages.error(request, 'Not enough seats available.')
+    else:
+        form = BookingForm()
+
+    context = {
+        'form': form,
+        'flight': flight,
+        'return_flight': return_flight
+    }
+    return render(request, 'flights/book.html', context)
+
+
+@login_required
+def bookings(request):
+    bookings = Booking.objects.filter(user=request.user)
+    return render(request, 'flights/bookings.html', {'bookings': bookings})
+
+
+@login_required
+def add_flight(request):
+    if request.method == 'POST':
+        form = FlightForm(request.POST)
+        if form.is_valid():
+            flight = form.save(commit=False)
+            flight.added_by = request.user
+            flight.save()
+            messages.success(request, 'Flight added successfully.')
+            return redirect('index')
+        else:
+            messages.error(request, 'Error adding flight. Please check the form.')
+    else:
+        form = FlightForm()
+    return render(request, 'flights/add_flight.html', {'form': form})
+
 
 def contact(request):
     return render(request, 'flights/contact.html')
@@ -149,7 +316,7 @@ def payment(request, booking_id):
         if form.is_valid():
             payment = form.save(commit=False)
             payment.booking = booking
-            payment.amount = booking.total_price()
+            payment.amount = booking.total_price()  # Call the method here
             payment.save()
             booking.status = 'Paid'
             booking.save()

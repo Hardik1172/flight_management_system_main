@@ -1,0 +1,17 @@
+1.)contact button should come on the footer
+
+2).halting should be suggested
+
+3).filter button
+
+4).google authentication should be added
+
+5). for no no of passengers different form for passenger details.
+
+6). and no of passengers details should come only once in front
+
+7). search flight option should be working on index.
+
+8). registration button not working
+
+9).

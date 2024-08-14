@@ -1,5 +1,0 @@
-
-
-duration of flight should be shown .
-
-filter button on basis of price and duration .

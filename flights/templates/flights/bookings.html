@@ -12,9 +12,11 @@
         <p><strong>Flight Number:</strong> {{ booking.flight.flight_number }}</p>
         <p><strong>From:</strong> {{ booking.flight.origin.city }} ({{ booking.flight.origin.code }}) <strong>To:</strong> {{ booking.flight.destination.city }} ({{ booking.flight.destination.code }})</p>
         <p><strong>Departure:</strong> {{ booking.flight.departure_time }} <strong>Arrival:</strong> {{ booking.flight.arrival_time }}</p>
+        <p><strong>Duration:</strong> {{ booking.flight.duration }}</p>
         <p><strong>Ticket Class:</strong> {{ booking.get_ticket_class_display }}</p>
         <p><strong>Food Choice:</strong> {{ booking.get_food_choice_display }}</p>
         <p><strong>Number of Seats:</strong> {{ booking.seats }}</p>
+        <p><strong> Price Before Tax:</strong> {{booking.price_before_tax}}</p>
         <p><strong>Total Price:</strong> ₹{{ booking.total_price }}</p>
         <p><strong>Status:</strong> {{ booking.status }}</p>
     </div>
