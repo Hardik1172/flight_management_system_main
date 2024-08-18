@@ -15,11 +15,16 @@
                     <p class="mb-1">Departure: {{ flight.departure_time|date:"D H:i" }} Arrival: {{ flight.arrival_time|date:"D H:i" }}</p>
                     <p class="mb-1">Economy Price: ₹{{ flight.economy_price }}</p>
                     <p class="mb-1">Business Price: ₹{{ flight.business_price }}</p>
-                    <p class="mb-1">Duration : {{flight.duration}}</p>
-
+                    <p class="mb-1">Duration: {{flight.duration}}</p>
                     <p class="mb-1">Available Seats: {{ flight.available_seats }}</p>
+                    {% if flight.stopovers.count > 0 %}
+                        <p class="mb-1">Stops: {{ flight.stopovers.count }}</p>
+                    {% else %}
+                        <p class="mb-1">Direct Flight</p>
+                    {% endif %}
+                    <a href="{% url 'flight_detail' flight.id %}" class="btn btn-info btn-sm">View Details</a>
                     {% if trip_type == 'one_way' %}
-                        <a href="{% url 'book' flight.id %}" class="btn btn-primary">Book Now</a>
+                        <a href="{% url 'book' flight.id %}" class="btn btn-primary btn-sm">Book Now</a>
                     {% endif %}
                 </div>
             {% endfor %}
@@ -40,6 +45,12 @@
                         <p class="mb-1">Economy Price: ₹{{ return_flight.economy_price }}</p>
                         <p class="mb-1">Business Price: ₹{{ return_flight.business_price }}</p>
                         <p class="mb-1">Available Seats: {{ return_flight.available_seats }}</p>
+                        {% if return_flight.stopovers.count > 0 %}
+                            <p class="mb-1">Stops: {{ return_flight.stopovers.count }}</p>
+                        {% else %}
+                            <p class="mb-1">Direct Flight</p>
+                        {% endif %}
+                        <a href="{% url 'flight_detail' return_flight.id %}" class="btn btn-info btn-sm">View Details</a>
                     </div>
                 {% endfor %}
             </div>

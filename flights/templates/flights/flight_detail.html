@@ -1,0 +1,25 @@
+{% extends "layout.html" %}
+{% block content %}
+<h1>Flight Details</h1>
+<h2>{{ flight.flight_number }}: {{ flight.origin }} to {{ flight.destination }}</h2>
+<p>Departure: {{ flight.departure_time }}</p>
+<p>Arrival: {{ flight.arrival_time }}</p>
+<p>Duration: {{ flight.duration }}</p>
+<p>Economy Price: ₹{{ flight.economy_price }}</p>
+<p>Business Price: ₹{{ flight.business_price }}</p>
+
+{% if stopovers %}
+<h3>Stopovers</h3>
+<ul>
+    {% for stopover in stopovers %}
+    <li>
+        {{ stopover.airport }}
+        <br>Arrival: {{ stopover.arrival_time }}
+        <br>Departure: {{ stopover.departure_time }}
+    </li>
+    {% endfor %}
+</ul>
+{% endif %}
+
+<a href="{% url 'book' flight.id %}">Book this flight</a>
+{% endblock %}

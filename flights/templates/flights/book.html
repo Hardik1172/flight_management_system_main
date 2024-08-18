@@ -1,19 +1,16 @@
 {% extends "layout.html" %}
+{% load static %}
 
 {% block content %}
 <h1 class="mb-4">Book Flight</h1>
 
 <div class="card mb-4">
     <div class="card-body">
-        <h5 class="card-title">Outbound Flight Details</h5>
+        <h5 class="card-title">Flight Details</h5>
         <p><strong>Flight Number:</strong> {{ flight.flight_number }}</p>
         <p><strong>From:</strong> {{ flight.origin.city }} ({{ flight.origin.code }}) <strong>To:</strong> {{ flight.destination.city }} ({{ flight.destination.code }})</p>
         <p><strong>Departure:</strong> {{ flight.departure_time|date:"F d, Y H:i" }}</p>
         <p><strong>Arrival:</strong> {{ flight.arrival_time|date:"F d, Y H:i" }}</p>
-        <p><strong>Duration:</strong> {{ flight.duration_str }}</p>
-        <p><strong>Economy Price:</strong> ₹{{ flight.economy_price }}</p>
-        <p><strong>Business Price:</strong> ₹{{ flight.business_price }}</p>
-        <p><strong>Available Seats:</strong> {{ flight.available_seats }}</p>
     </div>
 </div>
 
@@ -25,32 +22,147 @@
         <p><strong>From:</strong> {{ return_flight.origin.city }} ({{ return_flight.origin.code }}) <strong>To:</strong> {{ return_flight.destination.city }} ({{ return_flight.destination.code }})</p>
         <p><strong>Departure:</strong> {{ return_flight.departure_time|date:"F d, Y H:i" }}</p>
         <p><strong>Arrival:</strong> {{ return_flight.arrival_time|date:"F d, Y H:i" }}</p>
-        <p><strong>Duration:</strong> {{ return_flight.duration_str }}</p>
-        <p><strong>Economy Price:</strong> ₹{{ return_flight.economy_price }}</p>
-        <p><strong>Business Price:</strong> ₹{{ return_flight.business_price }}</p>
-        <p><strong>Available Seats:</strong> {{ return_flight.available_seats }}</p>
     </div>
 </div>
 {% endif %}
 
-<form method="post" class="needs-validation" novalidate>
+<form method="post" class="needs-validation" novalidate id="bookingForm">
     {% csrf_token %}
-    {% for field in form %}
-    <div class="mb-3">
-        <label class="form-label">{{ field.label }}</label>
-        {{ field }}
-        {% if field.help_text %}
-            <small class="form-text text-muted">{{ field.help_text }}</small>
-        {% endif %}
-        {% if field.errors %}
-            {% for error in field.errors %}
-                <div class="invalid-feedback d-block">
-                    {{ error }}
-                </div>
-            {% endfor %}
-        {% endif %}
+
+    <div class="mb-4">
+        <h3>Booking Details</h3>
+        {{ booking_form.as_p }}
     </div>
-    {% endfor %}
-    <button type="submit" class="btn btn-primary">Book Flight</button>
+
+    <div id="passengerForms">
+        <h3>Passenger Information</h3>
+
+        <div id="adultForms">
+            <h4>Adults (<span id="adultCount">0</span>/{{ adults }})</h4>
+            <div id="adultFormsContainer"></div>
+            {% if adults > 0 %}
+                <button type="button" class="btn btn-secondary mt-2" id="addAdult">+ Add Adult</button>
+            {% endif %}
+        </div>
+
+        <div id="childForms">
+            <h4>Children (<span id="childCount">0</span>/{{ children }})</h4>
+            <div id="childFormsContainer"></div>
+            {% if children > 0 %}
+                <button type="button" class="btn btn-secondary mt-2" id="addChild">+ Add Child</button>
+            {% endif %}
+        </div>
+
+        <div id="infantForms">
+            <h4>Infants (<span id="infantCount">0</span>/{{ infants }})</h4>
+            <div id="infantFormsContainer"></div>
+            {% if infants > 0 %}
+                <button type="button" class="btn btn-secondary mt-2" id="addInfant">+ Add Infant</button>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card mt-4 mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Booking Summary</h5>
+            <p><strong>Total Passengers:</strong> {{ total_passengers }}</p>
+            <p><strong>Adults:</strong> {{ adults }}</p>
+            <p><strong>Children:</strong> {{ children }}</p>
+            <p><strong>Infants:</strong> {{ infants }}</p>
+        </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary mt-3">Book Flight</button>
 </form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.querySelector('#bookingForm');
+        const addAdultBtn = document.querySelector('#addAdult');
+        const addChildBtn = document.querySelector('#addChild');
+        const addInfantBtn = document.querySelector('#addInfant');
+        const adultFormsContainer = document.querySelector('#adultFormsContainer');
+        const childFormsContainer = document.querySelector('#childFormsContainer');
+        const infantFormsContainer = document.querySelector('#infantFormsContainer');
+        const adultCount = document.querySelector('#adultCount');
+        const childCount = document.querySelector('#childCount');
+        const infantCount = document.querySelector('#infantCount');
+
+        let currentAdultCount = 0;
+        let currentChildCount = 0;
+        let currentInfantCount = 0;
+
+        const totalAdults = {{ adults }};
+        const totalChildren = {{ children }};
+        const totalInfants = {{ infants }};
+
+        function updatePassengerForm(formContainer, passengerType, currentCount, totalCount, countElement) {
+            if (currentCount < totalCount) {
+                const formIndex = currentCount;
+                const formHtml = `
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h5 class="card-title">${passengerType} ${formIndex + 1}</h5>
+                            <div class="mb-3">
+                                <label for="passenger_${formIndex}_first_name">First Name</label>
+                                <input type="text" name="passenger_${formIndex}_first_name" id="passenger_${formIndex}_first_name" class="form-control" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="passenger_${formIndex}_last_name">Last Name</label>
+                                <input type="text" name="passenger_${formIndex}_last_name" id="passenger_${formIndex}_last_name" class="form-control" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="passenger_${formIndex}_meal_choice">Meal Choice</label>
+                                <select name="passenger_${formIndex}_meal_choice" id="passenger_${formIndex}_meal_choice" class="form-control">
+                                    <option value="regular">Regular</option>
+                                    <option value="vegetarian">Vegetarian</option>
+                                    <option value="kosher">Kosher</option>
+                                    <option value="halal">Halal</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="passenger_${formIndex}_seat_class">Seat Class</label>
+                                <select name="passenger_${formIndex}_seat_class" id="passenger_${formIndex}_seat_class" class="form-control">
+                                    <option value="economy">Economy</option>
+                                    <option value="business">Business</option>
+                                </select>
+                            </div>
+                            <input type="hidden" name="passenger_${formIndex}_passenger_type" value="${passengerType.toLowerCase()}">
+                        </div>
+                    </div>
+                `;
+                formContainer.insertAdjacentHTML('beforeend', formHtml);
+                currentCount++;
+                countElement.textContent = currentCount;
+
+                if (currentCount === totalCount) {
+                    event.target.style.display = 'none';
+                }
+            }
+            return currentCount;
+        }
+
+        addAdultBtn.addEventListener('click', function(event) {
+            currentAdultCount = updatePassengerForm(adultFormsContainer, 'Adult', currentAdultCount, totalAdults, adultCount);
+        });
+
+        addChildBtn.addEventListener('click', function(event) {
+            currentChildCount = updatePassengerForm(childFormsContainer, 'Child', currentChildCount, totalChildren, childCount);
+        });
+
+        addInfantBtn.addEventListener('click', function(event) {
+            currentInfantCount = updatePassengerForm(infantFormsContainer, 'Infant', currentInfantCount, totalInfants, infantCount);
+        });
+
+        form.addEventListener('submit', function(event) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        }, false);
+    });
+</script>
 {% endblock %}

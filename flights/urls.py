@@ -1,5 +1,3 @@
-# flights/urls.py
-
 from django.urls import path
 from . import views
 
@@ -8,6 +6,7 @@ urlpatterns = [
     path('search/', views.search, name='search'),
     path('book/<int:flight_id>/', views.book, name='book'),
     path('book/<int:flight_id>/<int:return_flight_id>/', views.book, name='book'),
+    path('booking/<int:booking_id>/', views.booking_detail, name='booking_detail'),
     path('bookings/', views.bookings, name='bookings'),
     path('contact/', views.contact, name='contact'),
     path('register/', views.register, name='register'),
@@ -20,4 +19,5 @@ urlpatterns = [
     path('about/', views.about, name='about'),
     path('add_flight/', views.add_flight, name='add_flight'),
     path('booking_confirmation/<int:booking_id>/', views.booking_confirmation, name='booking_confirmation'),
-  ]
+    path('flight/<int:flight_id>/', views.flight_detail, name='flight_detail'),
+]

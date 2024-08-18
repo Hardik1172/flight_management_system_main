@@ -1,8 +1,28 @@
 from django import forms
-from .models import Flight, Airport, Booking, Payment
+from .models import Flight, Airport, Booking, Payment, Stopover
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from decimal import Decimal
+from django import forms
+from .models import Passenger
+from django.forms import modelformset_factory
+
+
+class PassengerForm(forms.ModelForm):
+    class Meta:
+        model = Passenger
+        fields = ['first_name', 'last_name', 'passenger_type', 'meal_choice', 'seat_class']
+        widgets = {
+            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'passenger_type': forms.HiddenInput(),
+            'meal_choice': forms.Select(attrs={'class': 'form-control'}),
+            'seat_class': forms.Select(attrs={'class': 'form-control'}),
+        }
+
+PassengerFormSet = modelformset_factory(Passenger, form=PassengerForm, extra=0)
+
+
 
 class SearchForm(forms.Form):
     TRIP_CHOICES = (
@@ -18,24 +38,6 @@ class SearchForm(forms.Form):
     children = forms.IntegerField(min_value=0, initial=0)
     infants = forms.IntegerField(min_value=0, initial=0)
 
-class BookingForm(forms.ModelForm):
-    adults = forms.DecimalField(min_value=Decimal('1.00'), max_digits=5, decimal_places=2, initial=Decimal('1.00'))
-    children = forms.DecimalField(min_value=Decimal('0.00'), max_digits=5, decimal_places=2,
-                                      initial=Decimal('0.00'))
-    infants = forms.DecimalField(min_value=Decimal('0.00'), max_digits=5, decimal_places=2, initial=Decimal('0.00'))
-
-    class Meta:
-        model = Booking
-        fields = ['passenger_name', 'email', 'adults', 'children', 'infants', 'ticket_class', 'food_choice']
-        widgets = {
-            'passenger_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'email': forms.EmailInput(attrs={'class': 'form-control'}),
-            'adults': forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),
-            'children': forms.NumberInput(attrs={'class': 'form-control', 'min': 0}),
-            'infants': forms.NumberInput(attrs={'class': 'form-control', 'min': 0}),
-            'ticket_class': forms.Select(attrs={'class': 'form-control'}),
-            'food_choice': forms.Select(attrs={'class': 'form-control'}),
-        }
 
 class PaymentForm(forms.ModelForm):
     card_number = forms.CharField(min_length=16, max_length=16, widget=forms.TextInput(attrs={'class': 'form-control'}))
@@ -78,4 +80,31 @@ class FlightForm(forms.ModelForm):
             'available_seats': forms.NumberInput(attrs={'class': 'form-control'}),
             'is_international': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'day_of_week': forms.Select(attrs={'class': 'form-control'}),
+        }
+
+class StopoverFormSet(forms.BaseInlineFormSet):
+    def clean(self):
+        super().clean()
+        for form in self.forms:
+            if form.cleaned_data and not form.cleaned_data.get('DELETE', False):
+                if form.cleaned_data['arrival_time'] >= form.cleaned_data['departure_time']:
+                    raise forms.ValidationError("Stopover arrival time must be before departure time.")
+
+StopoverInlineFormSet = forms.inlineformset_factory(
+    Flight, Stopover, formset=StopoverFormSet,
+    fields=('airport', 'arrival_time', 'departure_time'),
+    extra=1,
+    widgets={
+        'airport': forms.Select(attrs={'class': 'form-control'}),
+        'arrival_time': forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
+        'departure_time': forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
+    }
+)
+
+class BookingForm(forms.ModelForm):
+    class Meta:
+        model = Booking
+        fields = ['ticket_class']
+        widgets = {
+            'ticket_class': forms.Select(attrs={'class': 'form-control'}),
         }

@@ -1,0 +1,42 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<h1 class="mb-4">Booking Details</h1>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title">Flight {{ booking.flight.flight_number }}</h5>
+        <p><strong>From:</strong> {{ booking.flight.origin.city }} ({{ booking.flight.origin.code }})</p>
+        <p><strong>To:</strong> {{ booking.flight.destination.city }} ({{ booking.flight.destination.code }})</p>
+        <p><strong>Departure:</strong> {{ booking.flight.departure_time|date:"F d, Y H:i" }}</p>
+        <p><strong>Arrival:</strong> {{ booking.flight.arrival_time|date:"F d, Y H:i" }}</p>
+        <p><strong>Class:</strong> {{ booking.get_ticket_class_display }}</p>
+    </div>
+</div>
+
+{% if booking.return_flight %}
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title">Return Flight {{ booking.return_flight.flight_number }}</h5>
+        <p><strong>From:</strong> {{ booking.return_flight.origin.city }} ({{ booking.return_flight.origin.code }})</p>
+        <p><strong>To:</strong> {{ booking.return_flight.destination.city }} ({{ booking.return_flight.destination.code }})</p>
+        <p><strong>Departure:</strong> {{ booking.return_flight.departure_time|date:"F d, Y H:i" }}</p>
+        <p><strong>Arrival:</strong> {{ booking.return_flight.arrival_time|date:"F d, Y H:i" }}</p>
+    </div>
+</div>
+{% endif %}
+
+<h2>Passengers</h2>
+{% for passenger in passengers %}
+<div class="card mb-3">
+    <div class="card-body">
+        <h5 class="card-title">{{ passenger.first_name }} {{ passenger.last_name }}</h5>
+        <p><strong>Passenger ID:</strong> {{ passenger.passenger_id }}</p>
+        <p><strong>Type:</strong> {{ passenger.get_passenger_type_display }}</p>
+        <p><strong>Class:</strong> {{ passenger.seat_class }}</p>
+        <p><strong>Seat Number:</strong> {{ passenger.seat_number }}</p>
+        <p><strong>Meal Choice:</strong> {{ passenger.meal_choice }}</p>
+    </div>
+</div>
+{% endfor %}
+{% endblock %}
