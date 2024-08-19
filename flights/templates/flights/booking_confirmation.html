@@ -10,18 +10,37 @@
 <div class="card mb-4">
     <div class="card-body">
         <h5 class="card-title">Booking Details</h5>
-        <p>Passenger Name: {{ booking.passenger_name }}</p>
-        <p>Email: {{ booking.email }}</p>
+        <p>Booking ID: {{ booking.id }}</p>
         <p>Flight Number: {{ booking.flight.flight_number }}</p>
         <p>From: {{ booking.flight.origin.city }} ({{ booking.flight.origin.code }}) To: {{ booking.flight.destination.city }} ({{ booking.flight.destination.code }})</p>
         <p>Departure: {{ booking.flight.departure_time }} Arrival: {{ booking.flight.arrival_time }}</p>
-        <p>Number of Seats: {{ booking.seats }}</p>
-        <p>Seat Number: {{ booking.seat_number }}</p>
+        <p>Ticket Class: {{ booking.get_ticket_class_display }}</p>
         <p>Total Price: ₹{{ booking.total_price }}</p>
-
-
     </div>
 </div>
+
+<h5 class="mb-3">Passenger Details</h5>
+{% for passenger in passengers %}
+<div class="card mb-3">
+    <div class="card-body">
+        <h6 class="card-subtitle mb-2 text-muted">{{ passenger.get_passenger_type_display }}</h6>
+        <p class="card-text">Name: {{ passenger.first_name }} {{ passenger.last_name }}</p>
+        <p class="card-text">Seat Number: {{ passenger.seat_number }}</p>
+        <p class="card-text">Meal Choice: {{ passenger.get_meal_choice_display }}</p>
+    </div>
+</div>
+{% endfor %}
+
+{% if booking.return_flight %}
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title">Return Flight Details</h5>
+        <p>Flight Number: {{ booking.return_flight.flight_number }}</p>
+        <p>From: {{ booking.return_flight.origin.city }} ({{ booking.return_flight.origin.code }}) To: {{ booking.return_flight.destination.city }} ({{ booking.return_flight.destination.code }})</p>
+        <p>Departure: {{ booking.return_flight.departure_time }} Arrival: {{ booking.return_flight.arrival_time }}</p>
+    </div>
+</div>
+{% endif %}
 
 <a href="{% url 'index' %}" class="btn btn-primary">Return to Home</a>
 {% endblock %}

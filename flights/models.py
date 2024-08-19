@@ -70,15 +70,14 @@ class Booking(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     flight = models.ForeignKey(Flight, on_delete=models.CASCADE)
     return_flight = models.ForeignKey(Flight, on_delete=models.SET_NULL, null=True, blank=True,
-                                        related_name='return_bookings')
+                                          related_name='return_bookings')
     booking_date = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=20, default='Confirmed')
     adults = models.IntegerField(default=0)
     children = models.IntegerField(default=0)
     infants = models.IntegerField(default=0)
+    seat_number = models.CharField(max_length=5, null=True, blank=True)
     ticket_class = models.CharField(max_length=10, choices=TICKET_CLASSES, default='economy')
-
-
     def total_price(self):
         base_price = self.flight.business_price if self.ticket_class == 'business' else self.flight.economy_price
         adult_price = base_price * Decimal(str(self.adults))
@@ -120,7 +119,6 @@ class Passenger(models.Model):
     MEAL_CHOICES = [
         ('regular', 'Regular'),
         ('vegetarian', 'Vegetarian')
-
     ]
 
     booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name='passengers')

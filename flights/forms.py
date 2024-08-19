@@ -7,20 +7,12 @@ from django import forms
 from .models import Passenger
 from django.forms import modelformset_factory
 
-
 class PassengerForm(forms.ModelForm):
     class Meta:
         model = Passenger
-        fields = ['first_name', 'last_name', 'passenger_type', 'meal_choice', 'seat_class']
-        widgets = {
-            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'last_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'passenger_type': forms.HiddenInput(),
-            'meal_choice': forms.Select(attrs={'class': 'form-control'}),
-            'seat_class': forms.Select(attrs={'class': 'form-control'}),
-        }
+        fields = ['first_name', 'last_name', 'meal_choice']
 
-PassengerFormSet = modelformset_factory(Passenger, form=PassengerForm, extra=0)
+
 
 
 
