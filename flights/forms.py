@@ -8,9 +8,20 @@ from .models import Passenger
 from django.forms import modelformset_factory
 
 class PassengerForm(forms.ModelForm):
+    TICKET_CLASSES = (
+        ('economy', 'Economy'),
+        ('business', 'Business'),
+    )
+    ticket_class = forms.ChoiceField(choices=TICKET_CLASSES, widget=forms.Select(attrs={'class': 'form-control'}))
+
     class Meta:
         model = Passenger
-        fields = ['first_name', 'last_name', 'meal_choice']
+        fields = ['first_name', 'last_name', 'meal_choice', 'ticket_class']
+        widgets = {
+            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'meal_choice': forms.Select(attrs={'class': 'form-control'}),
+        }
 
 
 
@@ -96,7 +107,4 @@ StopoverInlineFormSet = forms.inlineformset_factory(
 class BookingForm(forms.ModelForm):
     class Meta:
         model = Booking
-        fields = ['ticket_class']
-        widgets = {
-            'ticket_class': forms.Select(attrs={'class': 'form-control'}),
-        }
+        fields = []  # We'll handle ticket_class in PassengerForm now

@@ -38,3 +38,28 @@
     background-color: #0056b3;
     border-color: #0056b3;
 }
+
+/* New styles for search history */
+.search-history {
+    background-color: #f8f9fa;
+    padding: 20px;
+    border-radius: 5px;
+    margin-top: 30px;
+}
+
+.search-history h5 {
+    margin-bottom: 15px;
+}
+
+.search-history .list-group-item {
+    background-color: #fff;
+    padding: 10px 15px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    font-size: 0.9em;
+}
+
+.search-history .list-group-item:hover {
+    background-color: #f0f0f0;
+}

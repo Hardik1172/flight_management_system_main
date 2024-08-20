@@ -70,13 +70,13 @@ class Booking(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     flight = models.ForeignKey(Flight, on_delete=models.CASCADE)
     return_flight = models.ForeignKey(Flight, on_delete=models.SET_NULL, null=True, blank=True,
-                                          related_name='return_bookings')
+                                        related_name='return_bookings')
     booking_date = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=20, default='Confirmed')
     adults = models.IntegerField(default=0)
     children = models.IntegerField(default=0)
     infants = models.IntegerField(default=0)
-    seat_number = models.CharField(max_length=5, null=True, blank=True)
+
     ticket_class = models.CharField(max_length=10, choices=TICKET_CLASSES, default='economy')
     def total_price(self):
         base_price = self.flight.business_price if self.ticket_class == 'business' else self.flight.economy_price
@@ -109,7 +109,6 @@ class Payment(models.Model):
     def __str__(self):
         return f"Payment for Booking {self.booking.id}"
 
-
 class Passenger(models.Model):
     PASSENGER_TYPES = [
         ('adult', 'Adult'),
@@ -117,24 +116,26 @@ class Passenger(models.Model):
         ('infant', 'Infant'),
     ]
     MEAL_CHOICES = [
-        ('regular', 'Regular'),
+        ('Non-Veg', 'Non-Vegetarian'),
         ('vegetarian', 'Vegetarian')
     ]
+    TICKET_CLASSES = (
+        ('economy', 'Economy'),
+        ('business', 'Business'),
+    )
 
     booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name='passengers')
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
     passenger_type = models.CharField(max_length=10, choices=PASSENGER_TYPES)
-    meal_choice = models.CharField(max_length=20, choices=MEAL_CHOICES, default='regular')
-    seat_class = models.CharField(max_length=20, choices=Booking.TICKET_CLASSES, default='economy')
+    meal_choice = models.CharField(max_length=20, choices=MEAL_CHOICES, default='vegetarian')
     seat_number = models.CharField(max_length=5, null=True, blank=True)
     passenger_id = models.CharField(max_length=10, unique=True, null=True, blank=True)
+    ticket_class = models.CharField(max_length=10, choices=TICKET_CLASSES, default='economy')
 
     def save(self, *args, **kwargs):
         if not self.passenger_id:
             self.passenger_id = self.generate_passenger_id()
-        if not self.seat_number:
-            self.seat_number = self.assign_seat()
         super().save(*args, **kwargs)
 
     def generate_passenger_id(self):
@@ -144,14 +145,23 @@ class Passenger(models.Model):
             if not Passenger.objects.filter(passenger_id=passenger_id).exists():
                 return passenger_id
 
-    def assign_seat(self):
-        class_prefix = 'B' if self.seat_class == 'business' else 'E'
-        while True:
-            row = random.randint(1, 30)
-            seat = random.choice(string.ascii_uppercase[:6])
-            seat_number = f"{class_prefix}{row}{seat}"
-            if not Passenger.objects.filter(booking__flight=self.booking.flight, seat_number=seat_number).exists():
-                return seat_number
-
     def __str__(self):
         return f"{self.first_name} {self.last_name} ({self.get_passenger_type_display()})"
+
+
+class SearchHistory(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    origin = models.ForeignKey(Airport, on_delete=models.SET_NULL, null=True, related_name='search_origins')
+    destination = models.ForeignKey(Airport, on_delete=models.SET_NULL, null=True, related_name='search_destinations')
+    departure_date = models.DateField()
+    return_date = models.DateField(null=True, blank=True)
+    adults = models.IntegerField(default=1)
+    children = models.IntegerField(default=0)
+    infants = models.IntegerField(default=0)
+    search_date = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-search_date']
+
+    def __str__(self):
+        return f"{self.user.username} - {self.origin} to {self.destination}"

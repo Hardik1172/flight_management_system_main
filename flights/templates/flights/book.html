@@ -30,126 +30,62 @@
 
 <form id="bookingForm" method="post" class="needs-validation" novalidate>
     {% csrf_token %}
-
-    <div class="mb-4">
-        <h3>Ticket Class</h3>
-        {{ booking_form.ticket_class.label_tag }}
-        {{ booking_form.ticket_class }}
-    </div>
+    {{ booking_form.as_p }}
 
     <div id="passengerForms">
         <h3>Passenger Information</h3>
+        {{ passenger_formset.management_form }}
 
-        <div id="adultPassengers">
-            <h4>Adult Passengers <button type="button" class="btn btn-sm btn-primary" id="addAdult">+</button></h4>
-            <div id="adultForms"></div>
-        </div>
+        <h4>Adults <button type="button" class="btn btn-sm btn-primary add-passenger" data-passenger-type="adult" data-max="{{ adults }}">+</button></h4>
+        <div id="adultForms"></div>
 
-        <div id="childPassengers">
-            <h4>Child Passengers <button type="button" class="btn btn-sm btn-primary" id="addChild">+</button></h4>
-            <div id="childForms"></div>
-        </div>
+        <h4>Children <button type="button" class="btn btn-sm btn-primary add-passenger" data-passenger-type="child" data-max="{{ children }}">+</button></h4>
+        <div id="childForms"></div>
 
-        <div id="infantPassengers">
-            <h4>Infant Passengers <button type="button" class="btn btn-sm btn-primary" id="addInfant">+</button></h4>
-            <div id="infantForms"></div>
-        </div>
+        <h4>Infants <button type="button" class="btn btn-sm btn-primary add-passenger" data-passenger-type="infant" data-max="{{ infants }}">+</button></h4>
+        <div id="infantForms"></div>
     </div>
 
     <div class="card mt-4 mb-4">
         <div class="card-body">
             <h5 class="card-title">Booking Summary</h5>
-            <p><strong>Total Passengers:</strong> <span id="totalPassengers">0</span></p>
-            <p><strong>Adults:</strong> <span id="adultCount">0</span></p>
-            <p><strong>Children:</strong> <span id="childCount">0</span></p>
-            <p><strong>Infants:</strong> <span id="infantCount">0</span></p>
+            <p><strong>Total Passengers:</strong> {{ total_passengers }}</p>
+            <p><strong>Adults:</strong> <span id="adultCount">0</span>/{{ adults }}</p>
+            <p><strong>Children:</strong> <span id="childCount">0</span>/{{ children }}</p>
+            <p><strong>Infants:</strong> <span id="infantCount">0</span>/{{ infants }}</p>
         </div>
     </div>
 
-    <button type="submit" class="btn btn-primary mt-3" id="bookFlightBtn" disabled>Book Flight</button>
+    <button type="submit" class="btn btn-primary mt-3">Book Flight</button>
 </form>
+
+<script type="text/template" id="passenger-form-template">
+    <div class="card mb-3 passenger-form" data-index="__prefix__">
+        <div class="card-body">
+            <h5 class="card-title">__title__ Passenger</h5>
+            {% for field in passenger_formset.empty_form %}
+                <div class="mb-3">
+                    {{ field.label_tag }}
+                    {{ field }}
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</script>
 {% endblock %}
 
 {% block extra_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const form = document.getElementById('bookingForm');
-        const addAdultBtn = document.getElementById('addAdult');
-        const addChildBtn = document.getElementById('addChild');
-        const addInfantBtn = document.getElementById('addInfant');
-        const adultForms = document.getElementById('adultForms');
-        const childForms = document.getElementById('childForms');
-        const infantForms = document.getElementById('infantForms');
-        const bookFlightBtn = document.getElementById('bookFlightBtn');
-
-        const maxAdults = {{ adults }};
-        const maxChildren = {{ children }};
-        const maxInfants = {{ infants }};
-
-        let adultCount = 0;
-        let childCount = 0;
-        let infantCount = 0;
-
-        function updatePassengerCounts() {
-            document.getElementById('adultCount').textContent = adultCount;
-            document.getElementById('childCount').textContent = childCount;
-            document.getElementById('infantCount').textContent = infantCount;
-            document.getElementById('totalPassengers').textContent = adultCount + childCount + infantCount;
-
-            bookFlightBtn.disabled = (adultCount !== maxAdults) || (childCount !== maxChildren) || (infantCount !== maxInfants);
-        }
-
-        function createPassengerForm(type, index) {
-            const div = document.createElement('div');
-            div.className = 'card mb-3';
-            div.innerHTML = `
-                <div class="card-body">
-                    <h5 class="card-title">${type} Passenger ${index + 1}</h5>
-                    <div class="mb-3">
-                        <label for="${type}FirstName${index}" class="form-label">First Name</label>
-                        <input type="text" class="form-control" id="${type}FirstName${index}" name="${type}FirstName${index}" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="${type}LastName${index}" class="form-label">Last Name</label>
-                        <input type="text" class="form-control" id="${type}LastName${index}" name="${type}LastName${index}" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="${type}MealChoice${index}" class="form-label">Meal Choice</label>
-                        <select class="form-control" id="${type}MealChoice${index}" name="${type}MealChoice${index}" required>
-                            <option value="">Select Meal</option>
-                            <option value="regular">Regular</option>
-                            <option value="vegetarian">Vegetarian</option>
-                        </select>
-                    </div>
-                    <input type="hidden" name="${type}PassengerType${index}" value="${type.toLowerCase()}">
-                </div>
-            `;
-            return div;
-        }
-
-        addAdultBtn.addEventListener('click', () => {
-            if (adultCount < maxAdults) {
-                adultForms.appendChild(createPassengerForm('Adult', adultCount));
-                adultCount++;
-                updatePassengerCounts();
-            }
-        });
-
-        addChildBtn.addEventListener('click', () => {
-            if (childCount < maxChildren) {
-                childForms.appendChild(createPassengerForm('Child', childCount));
-                childCount++;
-                updatePassengerCounts();
-            }
-        });
-
-        addInfantBtn.addEventListener('click', () => {
-            if (infantCount < maxInfants) {
-                infantForms.appendChild(createPassengerForm('Infant', infantCount));
-                infantCount++;
-                updatePassengerCounts();
-            }
-        });
+        const addPassengerButtons = document.querySelectorAll('.add-passenger');
+        const passengerFormTemplate = document.getElementById('passenger-form-template').innerHTML;
+        const totalFormsInput = document.querySelector('#id_passenger-TOTAL_FORMS');
+        const counters = {
+            'adult': document.getElementById('adultCount'),
+            'child': document.getElementById('childCount'),
+            'infant': document.getElementById('infantCount')
+        };
 
         form.addEventListener('submit', function(event) {
             if (!form.checkValidity()) {
@@ -159,7 +95,28 @@
             form.classList.add('was-validated');
         }, false);
 
-        updatePassengerCounts();
+        addPassengerButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const passengerType = this.dataset.passengerType;
+                const max = parseInt(this.dataset.max);
+                const currentCount = document.querySelectorAll(`#${passengerType}Forms .passenger-form`).length;
+
+                if (currentCount < max) {
+                    const formIndex = parseInt(totalFormsInput.value);
+                    const newForm = passengerFormTemplate
+                        .replace(/__prefix__/g, formIndex)
+                        .replace(/__title__/g, passengerType.charAt(0).toUpperCase() + passengerType.slice(1));
+
+                    document.querySelector(`#${passengerType}Forms`).insertAdjacentHTML('beforeend', newForm);
+                    totalFormsInput.value = formIndex + 1;
+                    counters[passengerType].textContent = currentCount + 1;
+
+                    if (currentCount + 1 >= max) {
+                        this.disabled = true;
+                    }
+                }
+            });
+        });
     });
 </script>
 {% endblock %}

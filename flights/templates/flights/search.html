@@ -8,10 +8,10 @@
 {% block content %}
 <div class="container">
     <h1 class="mb-4">Search Flights</h1>
-    <div/>
-    <small>Adults - 12+ , Children = 2-12 Age, Infants - Below 2 years </small>
-    <small> For Adults regular prices, For Children 30% Discount, For Infants 50% Discount</small>
-    <div/>
+    <div>
+        <small>Adults - 12+ , Children = 2-12 Age, Infants - Below 2 years </small>
+        <small> For Adults regular prices, For Children 30% Discount, For Infants 50% Discount</small>
+    </div>
 
     <div class="card mb-4 search-form">
         <div class="card-body">
@@ -55,6 +55,26 @@
             </form>
         </div>
     </div>
+
+    {% if search_history %}
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Your Recent Searches</h5>
+            <ul class="list-group">
+                {% for search in search_history %}
+                <li class="list-group-item">
+                    {{ search.origin }} to {{ search.destination }} -
+                    {{ search.departure_date|date:"M d, Y" }}
+                    {% if search.return_date %}
+                        to {{ search.return_date|date:"M d, Y" }}
+                    {% endif %}
+                    ({{ search.adults }} adults, {{ search.children }} children, {{ search.infants }} infants)
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    {% endif %}
 </div>
 
 <script>
