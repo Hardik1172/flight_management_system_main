@@ -34,52 +34,65 @@
 
     <div id="passengerForms">
         <h3>Passenger Information</h3>
-        {{ passenger_formset.management_form }}
 
         <h4>Adults <button type="button" class="btn btn-sm btn-primary add-passenger" data-passenger-type="adult" data-max="{{ adults }}">+</button></h4>
-        <div id="adultForms"></div>
+        <div id="adultForms">
+            {% for form in passenger_forms.adult %}
+            <div class="card mb-3 passenger-form" data-index="{{ forloop.counter0 }}">
+                <div class="card-body">
+                    <h5 class="card-title">Adult Passenger</h5>
+                    {{ form.as_p }}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
 
         <h4>Children <button type="button" class="btn btn-sm btn-primary add-passenger" data-passenger-type="child" data-max="{{ children }}">+</button></h4>
-        <div id="childForms"></div>
+        <div id="childForms">
+            {% for form in passenger_forms.child %}
+            <div class="card mb-3 passenger-form" data-index="{{ forloop.counter0 }}">
+                <div class="card-body">
+                    <h5 class="card-title">Child Passenger</h5>
+                    {{ form.as_p }}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
 
         <h4>Infants <button type="button" class="btn btn-sm btn-primary add-passenger" data-passenger-type="infant" data-max="{{ infants }}">+</button></h4>
-        <div id="infantForms"></div>
+        <div id="infantForms">
+            {% for form in passenger_forms.infant %}
+            <div class="card mb-3 passenger-form" data-index="{{ forloop.counter0 }}">
+                <div class="card-body">
+                    <h5 class="card-title">Infant Passenger</h5>
+                    {{ form.as_p }}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
     </div>
 
     <div class="card mt-4 mb-4">
         <div class="card-body">
             <h5 class="card-title">Booking Summary</h5>
             <p><strong>Total Passengers:</strong> {{ total_passengers }}</p>
-            <p><strong>Adults:</strong> <span id="adultCount">0</span>/{{ adults }}</p>
-            <p><strong>Children:</strong> <span id="childCount">0</span>/{{ children }}</p>
-            <p><strong>Infants:</strong> <span id="infantCount">0</span>/{{ infants }}</p>
+            <p><strong>Adults:</strong> <span id="adultCount">{{ adults }}</span>/{{ adults }}</p>
+            <p><strong>Children:</strong> <span id="childCount">{{ children }}</span>/{{ children }}</p>
+            <p><strong>Infants:</strong> <span id="infantCount">{{ infants }}</span>/{{ infants }}</p>
         </div>
     </div>
 
     <button type="submit" class="btn btn-primary mt-3">Book Flight</button>
 </form>
 
-<script type="text/template" id="passenger-form-template">
-    <div class="card mb-3 passenger-form" data-index="__prefix__">
-        <div class="card-body">
-            <h5 class="card-title">__title__ Passenger</h5>
-            {% for field in passenger_formset.empty_form %}
-                <div class="mb-3">
-                    {{ field.label_tag }}
-                    {{ field }}
-                </div>
-            {% endfor %}
-        </div>
-    </div>
-</script>
 {% endblock %}
 
 {% block extra_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const form = document.getElementById('bookingForm');
+        const form = document.getElementById('passengerForm');
         const addPassengerButtons = document.querySelectorAll('.add-passenger');
-        const passengerFormTemplate = document.getElementById('passenger-form-template').innerHTML;
+        const passengerFormTemplate = document.querySelector('.passenger-form').outerHTML;
         const totalFormsInput = document.querySelector('#id_passenger-TOTAL_FORMS');
         const counters = {
             'adult': document.getElementById('adultCount'),
@@ -103,11 +116,15 @@
 
                 if (currentCount < max) {
                     const formIndex = parseInt(totalFormsInput.value);
-                    const newForm = passengerFormTemplate
+                    let newForm = passengerFormTemplate
                         .replace(/__prefix__/g, formIndex)
-                        .replace(/__title__/g, passengerType.charAt(0).toUpperCase() + passengerType.slice(1));
+                        .replace(/__passenger_type__/g, passengerType);
 
-                    document.querySelector(`#${passengerType}Forms`).insertAdjacentHTML('beforeend', newForm);
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = newForm;
+
+                    document.querySelector(`#${passengerType}Forms`).appendChild(tempDiv.firstElementChild);
+
                     totalFormsInput.value = formIndex + 1;
                     counters[passengerType].textContent = currentCount + 1;
 

@@ -48,21 +48,27 @@ from django.shortcuts import render, redirect
 from .models import SearchHistory
 from .forms import SearchForm
 
+
 logger = logging.getLogger(__name__)
+
 
 def index(request):
     airports = Airport.objects.all()[:5]
     domestic_flights = Flight.objects.filter(is_international=False)[:5]
     international_flights = Flight.objects.filter(is_international=True)[:5]
     search_form = SearchForm()
+
+    # Retrieve search history
+    search_history = SearchHistory.objects.filter(user=request.user).order_by('-search_date')[
+                     :5] if request.user.is_authenticated else []
+
     return render(request, 'flights/index.html', {
         'airports': airports,
         'domestic_flights': domestic_flights,
         'international_flights': international_flights,
-        'search_form': search_form
+        'search_form': search_form,
+        'search_history': search_history
     })
-
-
 
 
 def search(request):
@@ -71,7 +77,7 @@ def search(request):
         if form.is_valid():
             # Save the search history
             SearchHistory.objects.create(
-                user=request.user,
+                user=request.user if request.user.is_authenticated else None,
                 origin=form.cleaned_data['origin'],
                 destination=form.cleaned_data['destination'],
                 departure_date=form.cleaned_data['departure_date'],
@@ -80,20 +86,34 @@ def search(request):
                 children=form.cleaned_data['children'],
                 infants=form.cleaned_data['infants']
             )
-            # Process the search
+
+            # Store search parameters in session
+            search_params = form.cleaned_data.copy()
+            search_params['origin'] = search_params['origin'].id
+            search_params['destination'] = search_params['destination'].id
+
+            # Convert date objects to strings
+            search_params['departure_date'] = search_params['departure_date'].isoformat()
+            if search_params['return_date']:
+                search_params['return_date'] = search_params['return_date'].isoformat()
+
+            request.session['search_params'] = search_params
+
+
+            # Redirect to search results
             return redirect('search_results')
     else:
         form = SearchForm()
 
     # Retrieve search history
-    search_history = SearchHistory.objects.filter(user=request.user).order_by('-search_date')[:5]
+    search_history = SearchHistory.objects.filter(user=request.user).order_by('-search_date')[
+                     :5] if request.user.is_authenticated else []
 
     context = {
         'form': form,
         'search_history': search_history
     }
     return render(request, 'flights/search.html', context)
-
 
 @login_required
 def book(request, flight_id, return_flight_id=None):
@@ -107,14 +127,20 @@ def book(request, flight_id, return_flight_id=None):
     infants = int(request.session.get('infants', 0))
     total_passengers = adults + children + infants
 
-    PassengerFormSet = formset_factory(PassengerForm, extra=0)
+
 
     if request.method == 'POST':
         booking_form = BookingForm(request.POST)
-        passenger_formset = PassengerFormSet(request.POST, prefix='passenger')
+        passenger_data = {
+            'adult': request.POST.getlist('passenger-adult-first_name'),
+            'child': request.POST.getlist('passenger-child-first_name'),
+            'infant': request.POST.getlist('passenger-infant-first_name'),
+        }
 
-        if booking_form.is_valid() and passenger_formset.is_valid():
-            booking = booking_form.save(commit=False)
+
+
+        if booking_form.is_valid():
+            booking = booking_form.save(commit= False)
             booking.user = request.user
             booking.flight = flight
             booking.return_flight = return_flight
@@ -123,31 +149,30 @@ def book(request, flight_id, return_flight_id=None):
             booking.infants = infants
             booking.save()
 
-            for i, form in enumerate(passenger_formset):
-                if form.cleaned_data:
-                    passenger = form.save(commit=False)
-                    passenger.booking = booking
-                    if i < adults:
-                        passenger.passenger_type = 'adult'
-                    elif i < adults + children:
-                        passenger.passenger_type = 'child'
-                    else:
-                        passenger.passenger_type = 'infant'
-                    passenger.seat_number = assign_seat(flight, passenger.ticket_class)
-                    passenger.save()
+
+
+
+            for passenger_type, first_names in passenger_data.items():
+                for i, first_name in enumerate(first_names):
+                    last_name = request.POST.getlist(f'passenger-{passenger_type}-last_name')[i]
+                    meal_choice = request.POST.getlist(f'passenger-{passenger_type}-meal_choice')[i]
+                    ticket_class = request.POST.getlist(f'passenger-{passenger_type}-ticket_class')[i]
+                    passenger = Passenger.objects.create(
+                        booking=booking,
+                        first_name=first_name,
+                        last_name=last_name,
+                        passenger_type=passenger_type,
+                        meal_choice=meal_choice,
+                        ticket_class=ticket_class,
+                    )
 
             messages.success(request, 'Booking created successfully.')
-            return redirect('booking_confirmation', booking_id=booking.id)
-        else:
-            messages.error(request, 'There was an error in your booking. Please check the details and try again.')
-
+            return redirect('payment', booking_id=booking.id)
     else:
         booking_form = BookingForm()
-        passenger_formset = PassengerFormSet(prefix='passenger')
 
     context = {
         'booking_form': booking_form,
-        'passenger_formset': passenger_formset,
         'flight': flight,
         'return_flight': return_flight,
         'adults': adults,
@@ -158,48 +183,49 @@ def book(request, flight_id, return_flight_id=None):
     return render(request, 'flights/book.html', context)
 
 
-
 def search_results(request):
-    form = SearchForm(request.GET)
-    if form.is_valid():
-        origin = form.cleaned_data['origin']
-        destination = form.cleaned_data['destination']
-        departure_date = form.cleaned_data['departure_date']
-        return_date = form.cleaned_data.get('return_date')
-        adults = form.cleaned_data['adults']
-        children = form.cleaned_data['children']
-        infants = form.cleaned_data['infants']
-        trip_type = form.cleaned_data['trip_type']
+    search_params = request.session.get('search_params', {})
+    if not search_params:
+        messages.error(request, "Please perform a search first.")
+        return redirect('search')
 
-        total_passengers = adults + children + infants
+    origin = Airport.objects.get(id=search_params['origin'])
+    destination = Airport.objects.get(id=search_params['destination'])
+    departure_date = datetime.fromisoformat(search_params['departure_date']).date()
+    return_date = datetime.fromisoformat(search_params['return_date']).date() if search_params.get('return_date') else None
+    adults = search_params['adults']
+    children = search_params['children']
+    infants = search_params['infants']
+    trip_type = search_params['trip_type']
 
-        outbound_flights = Flight.objects.filter(
-            origin=origin,
-            destination=destination,
-            departure_time__date=departure_date,
+    total_passengers = adults + children + infants
+
+    outbound_flights = Flight.objects.filter(
+        origin=origin,
+        destination=destination,
+        departure_time__date=departure_date,
+        available_seats__gte=total_passengers
+    ).prefetch_related('stopovers')
+
+    return_flights = None
+    if trip_type == 'round_trip' and return_date:
+        return_flights = Flight.objects.filter(
+            origin=destination,
+            destination=origin,
+            departure_time__date=return_date,
             available_seats__gte=total_passengers
         ).prefetch_related('stopovers')
 
-        return_flights = None
-        if trip_type == 'round_trip' and return_date:
-            return_flights = Flight.objects.filter(
-                origin=destination,
-                destination=origin,
-                departure_time__date=return_date,
-                available_seats__gte=total_passengers
-            ).prefetch_related('stopovers')
+    context = {
+        'outbound_flights': outbound_flights,
+        'return_flights': return_flights,
+        'adults': adults,
+        'children': children,
+        'infants': infants,
+        'trip_type': trip_type
+    }
+    return render(request, 'flights/search_results.html', context)
 
-        context = {
-            'outbound_flights': outbound_flights,
-            'return_flights': return_flights,
-            'adults': adults,
-            'children': children,
-            'infants': infants,
-            'trip_type': trip_type
-        }
-        return render(request, 'flights/search_results.html', context)
-    else:
-        return redirect('search')
 
 def assign_seat(flight, ticket_class):
     class_prefix = 'B' if ticket_class == 'business' else 'E'

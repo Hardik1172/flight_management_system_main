@@ -13,6 +13,7 @@ class Airport(models.Model):
     def __str__(self):
         return f"{self.city} ({self.code})"
 
+
 class Flight(models.Model):
     flight_number = models.CharField(max_length=10)
     origin = models.ForeignKey(Airport, on_delete=models.CASCADE, related_name='departures')
@@ -53,6 +54,7 @@ class Flight(models.Model):
     def __str__(self):
         return f"{self.flight_number}: {self.origin} to {self.destination}"
 
+
 class Stopover(models.Model):
     flight = models.ForeignKey(Flight, on_delete=models.CASCADE, related_name='stopovers')
     airport = models.ForeignKey(Airport, on_delete=models.CASCADE)
@@ -61,6 +63,7 @@ class Stopover(models.Model):
 
     def __str__(self):
         return f"Stopover at {self.airport} for {self.flight}"
+
 
 class Booking(models.Model):
     TICKET_CLASSES = (
@@ -104,7 +107,7 @@ class Payment(models.Model):
     cvv = models.CharField(max_length=3)
     expiry_date = models.DateField()
     amount = models.DecimalField(max_digits=10, decimal_places=2)
-    timestamp = models.DateTimeField(auto_now_add=True)
+    timestamp = models.DateTimeField(auto_now_add=False)
 
     def __str__(self):
         return f"Payment for Booking {self.booking.id}"
@@ -159,7 +162,6 @@ class SearchHistory(models.Model):
     children = models.IntegerField(default=0)
     infants = models.IntegerField(default=0)
     search_date = models.DateTimeField(auto_now_add=True)
-
     class Meta:
         ordering = ['-search_date']
 

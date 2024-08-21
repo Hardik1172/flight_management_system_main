@@ -8,20 +8,29 @@ from .models import Passenger
 from django.forms import modelformset_factory
 
 class PassengerForm(forms.ModelForm):
+    PASSENGER_TYPES = (
+        ('adult', 'Adult'),
+        ('child', 'Child'),
+        ('infant', 'Infant'),
+    )
+    MEAL_CHOICES = (
+        ('Non-Veg', 'Non-Vegetarian'),
+        ('vegetarian', 'Vegetarian')
+    )
     TICKET_CLASSES = (
         ('economy', 'Economy'),
         ('business', 'Business'),
     )
+
+
+    first_name = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control'}))
+    last_name = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control'}))
+    meal_choice = forms.ChoiceField(choices=MEAL_CHOICES, widget=forms.Select(attrs={'class': 'form-control'}))
     ticket_class = forms.ChoiceField(choices=TICKET_CLASSES, widget=forms.Select(attrs={'class': 'form-control'}))
 
     class Meta:
         model = Passenger
-        fields = ['first_name', 'last_name', 'meal_choice', 'ticket_class']
-        widgets = {
-            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'last_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'meal_choice': forms.Select(attrs={'class': 'form-control'}),
-        }
+        fields = ['passenger_type', 'first_name', 'last_name', 'meal_choice', 'ticket_class']
 
 
 
@@ -107,4 +116,4 @@ StopoverInlineFormSet = forms.inlineformset_factory(
 class BookingForm(forms.ModelForm):
     class Meta:
         model = Booking
-        fields = []  # We'll handle ticket_class in PassengerForm now
+        fields = []
