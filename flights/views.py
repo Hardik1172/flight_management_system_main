@@ -30,6 +30,7 @@ from .models import Flight, Airport, Booking, Stopover
 from .forms import SearchForm, BookingForm, FlightForm, PaymentForm, CustomUserCreationForm, StopoverInlineFormSet , PassengerForm
 from django.contrib.auth import login, authenticate, logout
 from django.forms import formset_factory
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -47,6 +48,7 @@ import random
 from django.shortcuts import render, redirect
 from .models import SearchHistory
 from .forms import SearchForm
+from django.http import  HttpResponse
 
 
 logger = logging.getLogger(__name__)
@@ -115,6 +117,8 @@ def search(request):
     }
     return render(request, 'flights/search.html', context)
 
+
+
 @login_required
 def book(request, flight_id, return_flight_id=None):
     flight = get_object_or_404(Flight, pk=flight_id)
@@ -122,25 +126,20 @@ def book(request, flight_id, return_flight_id=None):
     if return_flight_id:
         return_flight = get_object_or_404(Flight, pk=return_flight_id)
 
-    adults = int(request.session.get('adults', 0))
-    children = int(request.session.get('children', 0))
-    infants = int(request.session.get('infants', 0))
+    search_params = request.session.get('search_params', {})
+    adults = int(search_params.get('adults', 0))
+    children = int(search_params.get('children', 0))
+    infants = int(search_params.get('infants', 0))
     total_passengers = adults + children + infants
 
-
+    PassengerFormSet = formset_factory(PassengerForm, extra=0)
 
     if request.method == 'POST':
         booking_form = BookingForm(request.POST)
-        passenger_data = {
-            'adult': request.POST.getlist('passenger-adult-first_name'),
-            'child': request.POST.getlist('passenger-child-first_name'),
-            'infant': request.POST.getlist('passenger-infant-first_name'),
-        }
+        passenger_formset = PassengerFormSet(request.POST, prefix='passenger')
 
-
-
-        if booking_form.is_valid():
-            booking = booking_form.save(commit= False)
+        if booking_form.is_valid() and passenger_formset.is_valid():
+            booking = booking_form.save(commit=False)
             booking.user = request.user
             booking.flight = flight
             booking.return_flight = return_flight
@@ -149,30 +148,21 @@ def book(request, flight_id, return_flight_id=None):
             booking.infants = infants
             booking.save()
 
-
-
-
-            for passenger_type, first_names in passenger_data.items():
-                for i, first_name in enumerate(first_names):
-                    last_name = request.POST.getlist(f'passenger-{passenger_type}-last_name')[i]
-                    meal_choice = request.POST.getlist(f'passenger-{passenger_type}-meal_choice')[i]
-                    ticket_class = request.POST.getlist(f'passenger-{passenger_type}-ticket_class')[i]
-                    passenger = Passenger.objects.create(
-                        booking=booking,
-                        first_name=first_name,
-                        last_name=last_name,
-                        passenger_type=passenger_type,
-                        meal_choice=meal_choice,
-                        ticket_class=ticket_class,
-                    )
+            for form in passenger_formset:
+                if form.is_valid() and form.cleaned_data:
+                    passenger = form.save(commit=False)
+                    passenger.booking = booking
+                    passenger.save()
 
             messages.success(request, 'Booking created successfully.')
             return redirect('payment', booking_id=booking.id)
     else:
         booking_form = BookingForm()
+        passenger_formset = PassengerFormSet(prefix='passenger')
 
     context = {
         'booking_form': booking_form,
+        'passenger_formset': passenger_formset,
         'flight': flight,
         'return_flight': return_flight,
         'adults': adults,
@@ -181,6 +171,16 @@ def book(request, flight_id, return_flight_id=None):
         'total_passengers': total_passengers,
     }
     return render(request, 'flights/book.html', context)
+
+@login_required
+def bookings(request):
+    bookings = Booking.objects.filter(user=request.user).order_by('-booking_date')
+    return render(request, 'flights/bookings.html', {'bookings': bookings})
+
+@login_required
+def booking_detail(request, booking_id):
+    booking = get_object_or_404(Booking, id=booking_id, user=request.user)
+    return render(request, 'flights/booking_detail.html', {'booking': booking})
 
 
 def search_results(request):
@@ -226,7 +226,6 @@ def search_results(request):
     }
     return render(request, 'flights/search_results.html', context)
 
-
 def assign_seat(flight, ticket_class):
     class_prefix = 'B' if ticket_class == 'business' else 'E'
     while True:
@@ -238,24 +237,6 @@ def assign_seat(flight, ticket_class):
 
 
 
-
-@login_required
-def booking_detail(request, booking_id):
-    booking = get_object_or_404(Booking, id=booking_id, user=request.user)
-    passengers = booking.passengers.all()
-    context = {
-        'booking': booking,
-        'passengers': passengers,
-    }
-    return render(request, 'flights/booking_detail.html', context)
-
-@login_required
-def bookings(request):
-    bookings = Booking.objects.filter(user=request.user).select_related('flight')
-    context = {
-        'bookings': bookings
-    }
-    return render(request, 'flights/bookings.html', context)
 
 @login_required
 def payment(request, booking_id):
@@ -310,11 +291,16 @@ def user_login(request):
             messages.error(request, "Invalid username or password.")
     return render(request, 'flights/login.html')
 
+
+
+
 @login_required
 def user_logout(request):
     logout(request)
     messages.success(request, "You have successfully logged out.")
     return redirect('index')
+
+
 
 @login_required
 def add_flight(request):
@@ -337,6 +323,8 @@ def add_flight(request):
     }
     return render(request, 'flights/add_flight.html', context)
 
+
+
 def flight_detail(request, flight_id):
     flight = get_object_or_404(Flight, pk=flight_id)
     stopovers = flight.stopovers.all().order_by('arrival_time')
@@ -345,6 +333,7 @@ def flight_detail(request, flight_id):
         'stopovers': stopovers,
     }
     return render(request, 'flights/flight_detail.html', context)
+
 
 def privacy_policy(request):
     return render(request, 'flights/privacy_policy.html')
@@ -362,4 +351,44 @@ def about(request):
 
 def contact(request):
     return render(request, 'flights/contact.html')
+
+
+def cancel_ticket(request):
+    if request.method == "GET":
+        if request.user.is_authenticated :
+            ref  = request.GET['ref']
+            try:
+                ticket = ticket.objects.get(ref_no = ref)
+                if ticket.user == request.user:
+                    ticket.status = 'CANCELED'
+                    ticket.save()
+                    return JsonResponse({'success' : True})
+                else:
+                    return JsonResponse(
+                        {
+                            'success' : False,
+                            'error' : 'User unauthorized'
+                        }
+                    )
+            except Exception as e:
+                return JsonResponse({
+                    'success' : False,
+                    'error' : e
+                })
+        else:
+                return HttpResponse("user unauthorized")
+    else:
+        return HttpResponse("Method must be POST")
+
+
+
+
+
+
+
+
+
+
+
+
 

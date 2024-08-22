@@ -22,7 +22,7 @@ class PassengerForm(forms.ModelForm):
         ('business', 'Business'),
     )
 
-
+    passenger_type = forms.ChoiceField(choices=PASSENGER_TYPES, widget=forms.HiddenInput())
     first_name = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control'}))
     last_name = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control'}))
     meal_choice = forms.ChoiceField(choices=MEAL_CHOICES, widget=forms.Select(attrs={'class': 'form-control'}))
@@ -116,4 +116,4 @@ StopoverInlineFormSet = forms.inlineformset_factory(
 class BookingForm(forms.ModelForm):
     class Meta:
         model = Booking
-        fields = []
+        fields = ['ticket_class']

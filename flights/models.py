@@ -64,7 +64,6 @@ class Stopover(models.Model):
     def __str__(self):
         return f"Stopover at {self.airport} for {self.flight}"
 
-
 class Booking(models.Model):
     TICKET_CLASSES = (
         ('economy', 'Economy'),
@@ -72,42 +71,76 @@ class Booking(models.Model):
     )
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     flight = models.ForeignKey(Flight, on_delete=models.CASCADE)
-    return_flight = models.ForeignKey(Flight, on_delete=models.SET_NULL, null=True, blank=True,
-                                        related_name='return_bookings')
+    return_flight = models.ForeignKey(Flight, on_delete=models.SET_NULL, null=True, blank=True, related_name='return_bookings')
     booking_date = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=20, default='Confirmed')
     adults = models.IntegerField(default=0)
     children = models.IntegerField(default=0)
     infants = models.IntegerField(default=0)
-
     ticket_class = models.CharField(max_length=10, choices=TICKET_CLASSES, default='economy')
-    def total_price(self):
-        base_price = self.flight.business_price if self.ticket_class == 'business' else self.flight.economy_price
-        adult_price = base_price * Decimal(str(self.adults))
-        child_price = base_price * Decimal('0.7') * Decimal(str(self.children))
-        infant_price = base_price * Decimal('0.5') * Decimal(str(self.infants))
-        total = adult_price + child_price + infant_price
-
-        if self.return_flight:
-            return_base_price = self.return_flight.business_price if self.ticket_class == 'business' else self.return_flight.economy_price
-            return_adult_price = return_base_price * Decimal(str(self.adults))
-            return_child_price = return_base_price * Decimal('0.7') * Decimal(str(self.children))
-            return_infant_price = return_base_price * Decimal('0.5') * Decimal(str(self.infants))
-
-            total += return_adult_price + return_child_price + return_infant_price
-
-        return total.quantize(Decimal('0.01'))
 
     def __str__(self):
         return f"Booking {self.id} - {self.user.username} on {self.flight}"
 
+    def total_price(self):
+        base_price = self.flight.business_price if self.ticket_class == 'business' else self.flight.economy_price
+        total = base_price * (self.adults + self.children * Decimal('0.7') + self.infants * Decimal('0.5'))
+
+        if self.return_flight:
+            return_base_price = self.return_flight.business_price if self.ticket_class == 'business' else self.return_flight.economy_price
+            total += return_base_price * (self.adults + self.children * Decimal('0.7') + self.infants * Decimal('0.5'))
+
+        return total.quantize(Decimal('0.01'))
+
+    def get_passengers(self):
+        return self.passenger_set.all()
+
+
+class Passenger(models.Model):
+    PASSENGER_TYPES = [
+        ('adult', 'Adult'),
+        ('child', 'Child'),
+        ('infant', 'Infant'),
+    ]
+    MEAL_CHOICES = [
+        ('Non-Veg', 'Non-Vegetarian'),
+        ('vegetarian', 'Vegetarian')
+    ]
+    TICKET_CLASSES = (
+        ('economy', 'Economy'),
+        ('business', 'Business'),
+    )
+
+    booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name='passengers')
+    first_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100)
+    passenger_type = models.CharField(max_length=10, choices=PASSENGER_TYPES)
+    meal_choice = models.CharField(max_length=20, choices=MEAL_CHOICES, default='vegetarian')
+    seat_number = models.CharField(max_length=5, null=True, blank=True)
+    passenger_id = models.CharField(max_length=10, unique=True, null=True, blank=True)
+    ticket_class = models.CharField(max_length=10, choices=TICKET_CLASSES, default='economy')
+
+    def save(self, *args, **kwargs):
+        if not self.passenger_id:
+            self.passenger_id = self.generate_passenger_id()
+        super().save(*args, **kwargs)
+
+    def generate_passenger_id(self):
+        prefix = self.passenger_type[0].upper()
+        while True:
+            passenger_id = f"{prefix}{random.randint(100000, 999999)}"
+            if not Passenger.objects.filter(passenger_id=passenger_id).exists():
+                return passenger_id
+
+    def __str__(self):
+        return f"{self.first_name} {self.last_name} ({self.get_passenger_type_display()})"
 class Payment(models.Model):
     booking = models.OneToOneField(Booking, on_delete=models.CASCADE)
     card_number = models.CharField(max_length=16)
     cvv = models.CharField(max_length=3)
     expiry_date = models.DateField()
     amount = models.DecimalField(max_digits=10, decimal_places=2)
-    timestamp = models.DateTimeField(auto_now_add=False)
+    timestamp = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"Payment for Booking {self.booking.id}"

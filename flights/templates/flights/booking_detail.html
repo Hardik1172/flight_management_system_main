@@ -10,7 +10,7 @@
         <p><strong>To:</strong> {{ booking.flight.destination.city }} ({{ booking.flight.destination.code }})</p>
         <p><strong>Departure:</strong> {{ booking.flight.departure_time|date:"F d, Y H:i" }}</p>
         <p><strong>Arrival:</strong> {{ booking.flight.arrival_time|date:"F d, Y H:i" }}</p>
-        <p><strong>Class:</strong> {{ booking.get_ticket_class_display }}</p>
+        <p><strong>Class:</strong> {{ booking.ticket_class|title }}</p>
     </div>
 </div>
 
@@ -27,15 +27,15 @@
 {% endif %}
 
 <h2>Passengers</h2>
-{% for passenger in passengers %}
+{% for passenger in booking.passengers.all %}
 <div class="card mb-3">
     <div class="card-body">
         <h5 class="card-title">{{ passenger.first_name }} {{ passenger.last_name }}</h5>
         <p><strong>Passenger ID:</strong> {{ passenger.passenger_id }}</p>
         <p><strong>Type:</strong> {{ passenger.get_passenger_type_display }}</p>
-        <p><strong>Class:</strong> {{ passenger.seat_class }}</p>
+        <p><strong>Class:</strong> {{ passenger.ticket_class|title }}</p>
         <p><strong>Seat Number:</strong> {{ passenger.seat_number }}</p>
-        <p><strong>Meal Choice:</strong> {{ passenger.meal_choice }}</p>
+        <p><strong>Meal Choice:</strong> {{ passenger.get_meal_choice_display }}</p>
     </div>
 </div>
 {% endfor %}

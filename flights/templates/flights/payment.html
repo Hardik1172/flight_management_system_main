@@ -1,4 +1,5 @@
 {% extends "layout.html" %}
+{% load static %}
 
 {% block content %}
 <h1 class="mb-4">Payment</h1>
@@ -6,35 +7,33 @@
 <div class="card mb-4">
     <div class="card-body">
         <h5 class="card-title">Booking Summary</h5>
-        <p><strong>Flight Number:</strong> {{ booking.flight.flight_number }}</p>
+        <p><strong>Flight:</strong> {{ booking.flight.flight_number }}</p>
         <p><strong>From:</strong> {{ booking.flight.origin.city }} ({{ booking.flight.origin.code }}) <strong>To:</strong> {{ booking.flight.destination.city }} ({{ booking.flight.destination.code }})</p>
         <p><strong>Departure:</strong> {{ booking.flight.departure_time|date:"F d, Y H:i" }}</p>
-        <p><strong>Passenger:</strong> {{ booking.passenger_name }}</p>
-        <p><strong>Ticket Class:</strong> {{ booking.get_ticket_class_display }}</p>
-        <p><strong>Food Choice:</strong> {{ booking.get_food_choice_display }}</p>
-        <p><strong>Number of Seats:</strong> {{ booking.total_no_of_passengers }}</p>
-        <p><strong>Total Price:</strong> ₹{{ booking.total_price }}</p>
+        {% if booking.return_flight %}
+        <p><strong>Return Flight:</strong> {{ booking.return_flight.flight_number }}</p>
+        <p><strong>From:</strong> {{ booking.return_flight.origin.city }} ({{ booking.return_flight.origin.code }}) <strong>To:</strong> {{ booking.return_flight.destination.city }} ({{ booking.return_flight.destination.code }})</p>
+        <p><strong>Return Departure:</strong> {{ booking.return_flight.departure_time|date:"F d, Y H:i" }}</p>
+        {% endif %}
+        <p><strong>Passengers:</strong> {{ booking.adults }} Adults, {{ booking.children }} Children, {{ booking.infants }} Infants</p>
+        <p><strong>Total Price:</strong> ${{ total_price }}</p>
     </div>
 </div>
 
 <form method="post" class="needs-validation" novalidate>
     {% csrf_token %}
-    {% for field in form %}
     <div class="mb-3">
-        <label class="form-label">{{ field.label }}</label>
-        {{ field }}
-        {% if field.help_text %}
-            <small class="form-text text-muted">{{ field.help_text }}</small>
-        {% endif %}
-        {% if field.errors %}
-            {% for error in field.errors %}
-                <div class="invalid-feedback d-block">
-                    {{ error }}
-                </div>
-            {% endfor %}
-        {% endif %}
+        {{ form.card_number.label_tag }}
+        {{ form.card_number }}
     </div>
-    {% endfor %}
-    <button type="submit" class="btn btn-primary">Confirm Payment</button>
+    <div class="mb-3">
+        {{ form.cvv.label_tag }}
+        {{ form.cvv }}
+    </div>
+    <div class="mb-3">
+        {{ form.expiry_date.label_tag }}
+        {{ form.expiry_date }}
+    </div>
+    <button type="submit" class="btn btn-primary">Make Payment</button>
 </form>
 {% endblock %}

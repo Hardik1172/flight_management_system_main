@@ -35,54 +35,32 @@
     <div id="passengerForms">
         <h3>Passenger Information</h3>
 
-        <h4>Adults <button type="button" class="btn btn-sm btn-primary add-passenger" data-passenger-type="adult" data-max="{{ adults }}">+</button></h4>
         <div id="adultForms">
-            {% for form in passenger_forms.adult %}
-            <div class="card mb-3 passenger-form" data-index="{{ forloop.counter0 }}">
-                <div class="card-body">
-                    <h5 class="card-title">Adult Passenger</h5>
-                    {{ form.as_p }}
-                </div>
-            </div>
-            {% endfor %}
+            <h4>Adults <span id="adultCount">0</span>/{{ adults }} <button type="button" class="btn btn-sm btn-primary add-passenger" data-passenger-type="adult" data-max="{{ adults }}">+</button></h4>
         </div>
 
-        <h4>Children <button type="button" class="btn btn-sm btn-primary add-passenger" data-passenger-type="child" data-max="{{ children }}">+</button></h4>
         <div id="childForms">
-            {% for form in passenger_forms.child %}
-            <div class="card mb-3 passenger-form" data-index="{{ forloop.counter0 }}">
-                <div class="card-body">
-                    <h5 class="card-title">Child Passenger</h5>
-                    {{ form.as_p }}
-                </div>
-            </div>
-            {% endfor %}
+            <h4>Children <span id="childCount">0</span>/{{ children }} <button type="button" class="btn btn-sm btn-primary add-passenger" data-passenger-type="child" data-max="{{ children }}">+</button></h4>
         </div>
 
-        <h4>Infants <button type="button" class="btn btn-sm btn-primary add-passenger" data-passenger-type="infant" data-max="{{ infants }}">+</button></h4>
         <div id="infantForms">
-            {% for form in passenger_forms.infant %}
-            <div class="card mb-3 passenger-form" data-index="{{ forloop.counter0 }}">
-                <div class="card-body">
-                    <h5 class="card-title">Infant Passenger</h5>
-                    {{ form.as_p }}
-                </div>
-            </div>
-            {% endfor %}
+            <h4>Infants <span id="infantCount">0</span>/{{ infants }} <button type="button" class="btn btn-sm btn-primary add-passenger" data-passenger-type="infant" data-max="{{ infants }}">+</button></h4>
         </div>
     </div>
+
 
     <div class="card mt-4 mb-4">
         <div class="card-body">
             <h5 class="card-title">Booking Summary</h5>
             <p><strong>Total Passengers:</strong> {{ total_passengers }}</p>
-            <p><strong>Adults:</strong> <span id="adultCount">{{ adults }}</span>/{{ adults }}</p>
-            <p><strong>Children:</strong> <span id="childCount">{{ children }}</span>/{{ children }}</p>
-            <p><strong>Infants:</strong> <span id="infantCount">{{ infants }}</span>/{{ infants }}</p>
+            <p><strong>Adults:</strong> {{ adults }}</p>
+            <p><strong>Children:</strong> {{ children }}</p>
+            <p><strong>Infants:</strong> {{ infants }}</p>
         </div>
     </div>
 
-    <button type="submit" class="btn btn-primary mt-3">Book Flight</button>
+    {{ passenger_formset.management_form }}
+    <button type="submit" class="btn btn-primary mt-3">Proceed to Payment</button>
 </form>
 
 {% endblock %}
@@ -90,15 +68,16 @@
 {% block extra_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const form = document.getElementById('passengerForm');
+        const form = document.getElementById('bookingForm');
         const addPassengerButtons = document.querySelectorAll('.add-passenger');
-        const passengerFormTemplate = document.querySelector('.passenger-form').outerHTML;
-        const totalFormsInput = document.querySelector('#id_passenger-TOTAL_FORMS');
-        const counters = {
-            'adult': document.getElementById('adultCount'),
-            'child': document.getElementById('childCount'),
-            'infant': document.getElementById('infantCount')
-        };
+        const passengerFormTemplate = `
+            <div class="card mb-3 passenger-form">
+                <div class="card-body">
+                    <h5 class="card-title">__PASSENGER_TYPE__ Passenger</h5>
+                    {{ passenger_formset.empty_form.as_p|safe }}
+                </div>
+            </div>
+        `;
 
         form.addEventListener('submit', function(event) {
             if (!form.checkValidity()) {
@@ -115,22 +94,27 @@
                 const currentCount = document.querySelectorAll(`#${passengerType}Forms .passenger-form`).length;
 
                 if (currentCount < max) {
-                    const formIndex = parseInt(totalFormsInput.value);
-                    let newForm = passengerFormTemplate
-                        .replace(/__prefix__/g, formIndex)
-                        .replace(/__passenger_type__/g, passengerType);
+                    let newForm = passengerFormTemplate.replace('__PASSENGER_TYPE__', passengerType.charAt(0).toUpperCase() + passengerType.slice(1));
+                    newForm = newForm.replace(/passenger-__prefix__/g, `passenger-${passengerType}-${currentCount}`);
+                    newForm = newForm.replace(/id_passenger-__prefix__/g, `id_passenger-${passengerType}-${currentCount}`);
 
                     const tempDiv = document.createElement('div');
                     tempDiv.innerHTML = newForm;
 
-                    document.querySelector(`#${passengerType}Forms`).appendChild(tempDiv.firstElementChild);
+                    const formFields = tempDiv.querySelector('.passenger-form');
+                    formFields.querySelector('[name$="passenger_type"]').value = passengerType;
 
-                    totalFormsInput.value = formIndex + 1;
-                    counters[passengerType].textContent = currentCount + 1;
+                    document.querySelector(`#${passengerType}Forms`).appendChild(formFields);
+
+                    document.querySelector(`#${passengerType}Count`).textContent = currentCount + 1;
 
                     if (currentCount + 1 >= max) {
                         this.disabled = true;
                     }
+
+                    // Update the management form
+                    const totalForms = document.querySelector('[name$="TOTAL_FORMS"]');
+                    totalForms.value = parseInt(totalForms.value) + 1;
                 }
             });
         });
