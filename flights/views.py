@@ -48,10 +48,20 @@ import random
 from django.shortcuts import render, redirect
 from .models import SearchHistory
 from .forms import SearchForm
-from django.http import  HttpResponse
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from .models import Booking, Payment, Passenger
+from .forms import PaymentForm
+from django.utils import timezone
+from django.urls import reverse
+from django.db.utils import IntegrityError
+
 
 
 logger = logging.getLogger(__name__)
+
+
 
 
 def index(request):
@@ -88,6 +98,10 @@ def search(request):
                 children=form.cleaned_data['children'],
                 infants=form.cleaned_data['infants']
             )
+
+
+
+
 
             # Store search parameters in session
             search_params = form.cleaned_data.copy()
@@ -126,38 +140,44 @@ def book(request, flight_id, return_flight_id=None):
     if return_flight_id:
         return_flight = get_object_or_404(Flight, pk=return_flight_id)
 
+
     search_params = request.session.get('search_params', {})
     adults = int(search_params.get('adults', 0))
     children = int(search_params.get('children', 0))
     infants = int(search_params.get('infants', 0))
     total_passengers = adults + children + infants
 
-    PassengerFormSet = formset_factory(PassengerForm, extra=0)
+    PassengerFormSet = formset_factory(PassengerForm, extra=total_passengers)
 
     if request.method == 'POST':
         booking_form = BookingForm(request.POST)
         passenger_formset = PassengerFormSet(request.POST, prefix='passenger')
 
         if booking_form.is_valid() and passenger_formset.is_valid():
-            booking = booking_form.save(commit=False)
-            booking.user = request.user
-            booking.flight = flight
-            booking.return_flight = return_flight
-            booking.adults = adults
-            booking.children = children
-            booking.infants = infants
-            booking.save()
+            booking = Booking.objects.create(
+                user=request.user,
+                flight=flight,
+                return_flight=return_flight,
+                status='Pending',
+                adults=adults,
+                children=children,
+                infants=infants
+            )
 
-            for form in passenger_formset:
-                if form.is_valid() and form.cleaned_data:
-                    passenger = form.save(commit=False)
-                    passenger.booking = booking
-                    passenger.save()
+            passenger_types = ['adult'] * adults + ['child'] * children + ['infant'] * infants
+            for form, p_type in zip(passenger_formset, passenger_types):
+                passenger = form.save(commit=False)
+                passenger.booking = booking
+                passenger.passenger_type = p_type
+                passenger.save()
 
-            messages.success(request, 'Booking created successfully.')
-            return redirect('payment', booking_id=booking.id)
+            return redirect(reverse('payment', kwargs={'booking_id': booking.id}))
     else:
-        booking_form = BookingForm()
+        initial_data = {
+            'departure_date': max(flight.departure_time.date(), timezone.now().date()),
+            'return_date': return_flight.departure_time.date() if return_flight else None
+        }
+        booking_form = BookingForm(initial=initial_data)
         passenger_formset = PassengerFormSet(prefix='passenger')
 
     context = {
@@ -172,15 +192,24 @@ def book(request, flight_id, return_flight_id=None):
     }
     return render(request, 'flights/book.html', context)
 
+
+
+# views.py
+
 @login_required
 def bookings(request):
-    bookings = Booking.objects.filter(user=request.user).order_by('-booking_date')
+    bookings = Booking.objects.filter(user=request.user).select_related('flight').prefetch_related('passengers').order_by('-booking_date')
     return render(request, 'flights/bookings.html', {'bookings': bookings})
 
 @login_required
 def booking_detail(request, booking_id):
-    booking = get_object_or_404(Booking, id=booking_id, user=request.user)
-    return render(request, 'flights/booking_detail.html', {'booking': booking})
+    booking = get_object_or_404(Booking.objects.prefetch_related('passengers'), id=booking_id, user=request.user)
+    passengers = booking.passengers.all()
+    print(f"Number of passengers: {passengers.count()}")  # Debug print
+    for passenger in passengers:
+        print(f"Passenger: {passenger.first_name} {passenger.last_name}")  # Debug print
+    return render(request, 'flights/booking_detail.html', {'booking': booking, 'passengers': passengers})
+
 
 
 def search_results(request):
@@ -236,29 +265,31 @@ def assign_seat(flight, ticket_class):
             return seat_number
 
 
-
+# views.py
 
 @login_required
 def payment(request, booking_id):
-    booking = get_object_or_404(Booking, pk=booking_id, user=request.user)
-    if request.method == 'POST':
-        form = PaymentForm(request.POST)
-        if form.is_valid():
-            payment = form.save(commit=False)
-            payment.booking = booking
-            payment.amount = booking.total_price()
-            payment.save()
-            messages.success(request, 'Payment successful. Your booking is confirmed.')
-            return redirect('booking_confirmation', booking_id=booking.id)
-    else:
-        form = PaymentForm()
+    booking = get_object_or_404(Booking, id=booking_id, user=request.user)
 
-    context = {
-        'form': form,
-        'booking': booking,
-        'total_price': booking.total_price(),
-    }
-    return render(request, 'flights/payment.html', context)
+    if request.method == 'POST':
+        payment_form = PaymentForm(request.POST)
+        if payment_form.is_valid():
+            # Process payment here
+            booking.status = 'Confirmed'
+            booking.save()
+            return redirect('booking_confirmation', booking_id=booking.id)
+
+    if payment(request, booking_id):
+        booking = get_object_or_404(Booking , id = booking_id, user = request.user)
+        if request.method == 'POST':
+            payment_form = PaymentForm(request.POST)
+
+
+    else:
+        payment_form = PaymentForm()
+
+    return render(request, 'flights/payment.html', {'booking': booking, 'payment_form': payment_form})
+
 
 @login_required
 def booking_confirmation(request, booking_id):
@@ -270,10 +301,15 @@ def register(request):
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
-            user = form.save()
-            login(request, user)
-            messages.success(request, "Registration successful.")
-            return redirect("index")
+            try:
+                user = form.save()
+                login(request, user)
+                messages.success(request, "Registration successful.")
+                return redirect("index")
+            except IntegrityError:
+                messages.error(request, "A user with that username already exists. Please choose a different username.")
+        else:
+            messages.error(request, "Registration failed. Please correct the errors below.")
     else:
         form = CustomUserCreationForm()
     return render(request, "flights/register.html", {"form": form})
@@ -351,35 +387,6 @@ def about(request):
 
 def contact(request):
     return render(request, 'flights/contact.html')
-
-
-def cancel_ticket(request):
-    if request.method == "GET":
-        if request.user.is_authenticated :
-            ref  = request.GET['ref']
-            try:
-                ticket = ticket.objects.get(ref_no = ref)
-                if ticket.user == request.user:
-                    ticket.status = 'CANCELED'
-                    ticket.save()
-                    return JsonResponse({'success' : True})
-                else:
-                    return JsonResponse(
-                        {
-                            'success' : False,
-                            'error' : 'User unauthorized'
-                        }
-                    )
-            except Exception as e:
-                return JsonResponse({
-                    'success' : False,
-                    'error' : e
-                })
-        else:
-                return HttpResponse("user unauthorized")
-    else:
-        return HttpResponse("Method must be POST")
-
 
 
 
