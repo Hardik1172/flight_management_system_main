@@ -13,6 +13,7 @@
             <th>Passenger ID(s)</th>
             <th>Status</th>
             <th>Actions</th>
+
         </tr>
     </thead>
     <tbody>
@@ -29,8 +30,10 @@
                 {% endfor %}
             </td>
             <td>{{ booking.status }}</td>
+
             <td>
                 <a href="{% url 'booking_detail' booking.id %}" class="btn btn-primary btn-sm">View Details</a>
+
             </td>
         </tr>
         {% endfor %}

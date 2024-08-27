@@ -1,142 +1,194 @@
 {% extends "layout.html" %}
+{% load static %}
 
 {% block content %}
-<div class="text-center mb-4">
-    <h1>Welcome to FlightBook App</h1>
-    <p class="lead">Let's book your ticket!</p>
-</div>
-
-<div class="row">
-    <div class="col-md-6 mx-auto">
-        <div class="card mb-4">
-            <div class="card-body">
-                <h5 class="card-title">Search Flights</h5>
-                <form action="{% url 'search' %}" method="post">
-                    {% csrf_token %}
-                    <div class="mb-3">
-                        {{ search_form.trip_type.label_tag }}
-                        {{ search_form.trip_type }}
-                    </div>
-                    <div class="mb-3">
-                        {{ search_form.origin.label_tag }}
-                        {{ search_form.origin }}
-                    </div>
-                    <div class="mb-3">
-                        {{ search_form.destination.label_tag }}
-                        {{ search_form.destination }}
-                    </div>
-                    <div class="mb-3">
-                        {{ search_form.departure_date.label_tag }}
-                        {{ search_form.departure_date }}
-                    </div>
-                    <div class="mb-3" id="return-date-field" style="display:none;">
-                        {{ search_form.return_date.label_tag }}
-                        {{ search_form.return_date }}
-                    </div>
-                    <div class="mb-3">
-                        {{ search_form.adults.label_tag }}
-                        {{ search_form.adults }}
-                    </div>
-                    <div class="mb-3">
-                        {{ search_form.children.label_tag }}
-                        {{ search_form.children }}
-                    </div>
-                    <div class="mb-3">
-                        {{ search_form.infants.label_tag }}
-                        {{ search_form.infants }}
-                    </div>
-                    <button type="submit" class="btn btn-primary">Search Flights</button>
-                </form>
-            </div>
-        </div>
+<div class="container">
+    <div class="text-center mb-4">
+        <h1>Welcome to FlightBook App</h1>
+        <p class="lead">Let's book your ticket!</p>
     </div>
-</div>
 
-{% if search_history %}
-<div class="row">
-    <div class="col-md-6 mx-auto">
-        <div class="card mb-4">
-            <div class="card-body">
-                <h5 class="card-title">Recent Searches</h5>
-                <ul class="list-group">
-                    {% for search in search_history %}
-                    <li class="list-group-item">
-                        {{ search.origin }} to {{ search.destination }} -
-                        {{ search.departure_date|date:"M d, Y" }}
-                        {% if search.return_date %}
-                            to {{ search.return_date|date:"M d, Y" }}
+    <div class="row">
+        <div class="col-md-6 mx-auto">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Search Flights</h5>
+                    <form action="{% url 'search' %}" method="post" id="search-form">
+                        {% csrf_token %}
+                        {% if messages %}
+                        <div class="alert alert-danger">
+                            {% for message in messages %}
+                            {{ message }}
+                            {% endfor %}
+                        </div>
                         {% endif %}
-                        ({{ search.adults }} adults, {{ search.children }} children, {{ search.infants }} infants)
-                    </li>
-                    {% endfor %}
-                </ul>
+                        <div class="mb-3">
+                            {{ search_form.trip_type.label_tag }}
+                            {{ search_form.trip_type }}
+                        </div>
+                        <div class="mb-3">
+                            {{ search_form.origin.label_tag }}
+                            {{ search_form.origin }}
+                        </div>
+                        <div class="mb-3">
+                            {{ search_form.destination.label_tag }}
+                            {{ search_form.destination }}
+                        </div>
+                        <div class="mb-3">
+                            {{ search_form.departure_date.label_tag }}
+                            {{ search_form.departure_date }}
+                        </div>
+                        <div class="mb-3" id="return-date-field" style="display:none;">
+                            {{ search_form.return_date.label_tag }}
+                            {{ search_form.return_date }}
+                        </div>
+                        <div class="mb-3">
+                            {{ search_form.adults.label_tag }}
+                            {{ search_form.adults }}
+                        </div>
+                        <div class="mb-3">
+                            {{ search_form.children.label_tag }}
+                            {{ search_form.children }}
+                        </div>
+                        <div class="mb-3">
+                            {{ search_form.infants.label_tag }}
+                            {{ search_form.infants }}
+                        </div>
+                        <button type="submit" class="btn btn-primary">Search Flights</button>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
-</div>
-{% endif %}
 
-<div class="row">
-    <div class="col-md-6">
-        <h2>Popular Domestic Flights</h2>
-        <ul class="list-group">
-        {% for flight in domestic_flights %}
-            <li class="list-group-item">
-                {{ flight.flight_number }}: {{ flight.origin.city }} to {{ flight.destination.city }}
-                - Economy Class: ₹{{ flight.economy_price }}, Business Class: ₹{{ flight.business_price }}
-                <br>
-                <small>Departs: {{ flight.departure_time|date:"D H:i" }}, Arrives: {{ flight.arrival_time|date:"D H:i" }}, Duration: {{flight.duration}}</small>
-                {% if flight.stopovers.count > 0 %}
-                    <br><small>{{ flight.stopovers.count }} stop(s)</small>
-                {% endif %}
-            </li>
-        {% endfor %}
+    {% if search_history %}
+    <div class="row">
+        <div class="col-md-6 mx-auto">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Recent Searches</h5>
+                    <ul class="list-group">
+                        {% for search in search_history %}
+                        <li class="list-group-item">
+                            {{ search.origin }} to {{ search.destination }} -
+                            {{ search.departure_date|date:"M d, Y" }}
+                            {% if search.return_date %}
+                                to {{ search.return_date|date:"M d, Y" }}
+                            {% endif %}
+                            ({{ search.adults }} adults, {{ search.children }} children, {{ search.infants }} infants)
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="row">
+        <div class="col-md-6">
+            <h2>Popular Domestic Flights</h2>
+            <ul class="list-group">
+            {% for flight in domestic_flights %}
+                <li class="list-group-item">
+                    {{ flight.flight_number }}: {{ flight.origin.city }} to {{ flight.destination.city }}
+                    - Economy Class: ₹{{ flight.economy_price }}, Business Class: ₹{{ flight.business_price }}
+                    <br>
+                    <small>Departs: {{ flight.departure_time|date:"D H:i" }}, Arrives: {{ flight.arrival_time|date:"D H:i" }}, Duration: {{flight.duration}}</small>
+                    {% if flight.stopovers.count > 0 %}
+                        <br><small>{{ flight.stopovers.count }} stop(s)</small>
+                    {% endif %}
+                </li>
+            {% endfor %}
+            </ul>
+        </div>
+        <div class="col-md-6">
+            <h2>Popular International Flights</h2>
+            <ul class="list-group">
+            {% for flight in international_flights %}
+                <li class="list-group-item">
+                    {{ flight.flight_number }}: {{ flight.origin.city }} to {{ flight.destination.city }}
+                    - Economy Class: ₹{{ flight.economy_price }}, Business Class: ₹{{ flight.business_price }}
+                    <br>
+                    <small>Departs: {{ flight.departure_time|date:"D H:i" }}, Arrives: {{ flight.arrival_time|date:"D H:i" }}, Duration: {{flight.duration}}</small>
+                    {% if flight.stopovers.count > 0 %}
+                        <br><small>{{ flight.stopovers.count }} stop(s)</small>
+                    {% endif %}
+                </li>
+            {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <h2>Why Choose FlightBook Application?</h2>
+        <ul>
+            <li>Cheapest prices</li>
+            <li>Best offers</li>
+            <li>Best suggestions for your journey</li>
+            <li>Most easy process</li>
         </ul>
     </div>
-    <div class="col-md-6">
-        <h2>Popular International Flights</h2>
-        <ul class="list-group">
-        {% for flight in international_flights %}
-            <li class="list-group-item">
-                {{ flight.flight_number }}: {{ flight.origin.city }} to {{ flight.destination.city }}
-                - Economy Class: ₹{{ flight.economy_price }}, Business Class: ₹{{ flight.business_price }}
-                <br>
-                <small>Departs: {{ flight.departure_time|date:"D H:i" }}, Arrives: {{ flight.arrival_time|date:"D H:i" }}, Duration: {{flight.duration}}</small>
-                {% if flight.stopovers.count > 0 %}
-                    <br><small>{{ flight.stopovers.count }} stop(s)</small>
-                {% endif %}
-            </li>
-        {% endfor %}
-        </ul>
-    </div>
-</div>
-
-<div class="mt-4">
-    <h2>Why Choose FlightBook Application?</h2>
-    <ul>
-        <li>Cheapest prices</li>
-        <li>Best offers</li>
-        <li>Best suggestions for your journey</li>
-        <li>Most easy process</li>
-    </ul>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const tripTypeRadios = document.querySelectorAll('input[name="trip_type"]');
-        const returnDateField = document.getElementById('return-date-field');
+document.addEventListener('DOMContentLoaded', function() {
+    const tripTypeRadios = document.querySelectorAll('input[name="trip_type"]');
+    const returnDateField = document.getElementById('return-date-field');
+    const originSelect = document.getElementById('id_origin');
+    const destinationSelect = document.getElementById('id_destination');
+    const searchForm = document.getElementById('search-form');
 
-        tripTypeRadios.forEach(radio => {
-            radio.addEventListener('change', function() {
-                if (this.value === 'round_trip') {
-                    returnDateField.style.display = 'block';
-                } else {
-                    returnDateField.style.display = 'none';
-                }
-            });
+    tripTypeRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            if (this.value === 'round_trip') {
+                returnDateField.style.display = 'block';
+            } else {
+                returnDateField.style.display = 'none';
+            }
         });
     });
+
+    originSelect.addEventListener('change', function() {
+        updateDestinations(this.value);
+    });
+
+    function updateDestinations(originId) {
+    destinationSelect.innerHTML = '<option value="">Select Destination</option>';
+    if (originId) {
+        fetch(`/flights/get_destinations/${originId}/`)  // Make sure this URL is correct
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                data.forEach(airport => {
+                    const option = document.createElement('option');
+                    option.value = airport.id;
+                    option.textContent = `${airport.name} (${airport.code})`;
+                    destinationSelect.appendChild(option);
+                });
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while fetching destinations. Please try again.');
+            });
+    }
+}
+
+    searchForm.addEventListener('submit', function(e) {
+        if (originSelect.value === destinationSelect.value) {
+            e.preventDefault();
+            alert("From & To airports cannot be the same.");
+        }
+    });
+
+    // Initial update of destinations
+    updateDestinations(originSelect.value);
+});
 </script>
 {% endblock %}

@@ -9,8 +9,8 @@
 <div class="container">
     <h1 class="mb-4">Search Flights</h1>
     <div>
-        <small>Adults - 12+ , Children = 2-12 Age, Infants - Below 2 years </small>
-        <small> For Adults regular prices, For Children 30% Discount, For Infants 50% Discount</small>
+        <small>Adults - 12+ , Children = 2-12 Age, Infants - Below 2 years</small>
+        <small>For Adults regular prices, For Children 30% Discount, For Infants 50% Discount</small>
     </div>
 
     <div class="card mb-4 search-form">
@@ -78,19 +78,66 @@
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const tripTypeRadios = document.querySelectorAll('input[name="trip_type"]');
-        const returnDateField = document.getElementById('return-date-field');
+document.addEventListener('DOMContentLoaded', function() {
+    const tripTypeRadios = document.querySelectorAll('input[name="trip_type"]');
+    const returnDateField = document.getElementById('return-date-field');
+    const originSelect = document.getElementById('id_origin');
+    const destinationSelect = document.getElementById('id_destination');
 
-        tripTypeRadios.forEach(radio => {
-            radio.addEventListener('change', function() {
-                if (this.value === 'round_trip') {
-                    returnDateField.style.display = 'block';
-                } else {
-                    returnDateField.style.display = 'none';
-                }
-            });
+    console.log("DOM fully loaded");
+
+    // Handle trip type selection
+    tripTypeRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            if (this.value === 'round_trip') {
+                returnDateField.style.display = 'block';
+            } else {
+                returnDateField.style.display = 'none';
+            }
         });
     });
+
+    // Handle origin selection and fetch destinations
+    if (originSelect) {
+        console.log("Origin select found");
+        originSelect.addEventListener('change', function() {
+            const originId = this.value;
+            console.log("Origin changed to:", originId);
+
+            destinationSelect.innerHTML = '<option value="">Select Destination</option>';
+
+            if (originId) {
+                console.log(`Fetching destinations for origin ID: ${originId}`);
+                fetch(`/flights/get_destinations/${originId}/`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('Received data:', data);
+                        if (data.length === 0) {
+                            console.log('No destinations received');
+                        } else {
+                            data.forEach(airport => {
+                                const option = document.createElement('option');
+                                option.value = airport.id;
+                                option.textContent = airport.name;
+                                destinationSelect.appendChild(option);
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('An error occurred while fetching destinations. Please try again.');
+                    });
+            }
+        });
+    } else {
+        console.error("Origin select not found");
+    }
+});
 </script>
+
 {% endblock %}

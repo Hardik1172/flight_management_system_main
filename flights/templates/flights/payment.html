@@ -23,16 +23,16 @@
 <form method="post" class="needs-validation" novalidate>
     {% csrf_token %}
     <div class="mb-3">
-        {{ form.card_number.label_tag }}
-        {{ form.card_number }}
+        {{ payment_form.card_number.label_tag }}
+        {{ payment_form.card_number }}
     </div>
     <div class="mb-3">
-        {{ form.cvv.label_tag }}
-        {{ form.cvv }}
+        {{ payment_form.cvv.label_tag }}
+        {{ payment_form.cvv }}
     </div>
     <div class="mb-3">
-        {{ form.expiry_date.label_tag }}
-        {{ form.expiry_date }}
+        {{ payment_form.expiry_date.label_tag }}
+        {{ payment_form.expiry_date }}
     </div>
     <button type="submit" class="btn btn-primary">Make Payment</button>
 </form>

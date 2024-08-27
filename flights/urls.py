@@ -5,6 +5,7 @@ urlpatterns = [
     path('', views.index, name='index'),
     path('search/', views.search, name='search'),
     path('book/<int:flight_id>/', views.book, name='book'),
+    path('get_destinations/<int:origin_id>/', views.get_destinations, name='get_destinations'),
     path('book/<int:flight_id>/<int:return_flight_id>/', views.book, name='book'),
     path('booking/<int:booking_id>/', views.booking_detail, name='booking_detail'),
     path('bookings/', views.bookings, name='bookings'),
@@ -21,5 +22,8 @@ urlpatterns = [
     path('booking_confirmation/<int:booking_id>/', views.booking_confirmation, name='booking_confirmation'),
     path('flight/<int:flight_id>/', views.flight_detail, name='flight_detail'),
     path('search/results/', views.search_results, name='search_results'),
-    path('book/<int:outbound_flight_id>/<int:return_flight_id>/', views.book, name='book')
+    path('book/<int:flight_id>/<int:return_flight_id>/', views.book, name='book_round_trip'),
+    path('cancel_booking/<int:booking_id>/', views.cancel_booking, name='cancel_booking'),
+    path('book/<int:outbound_flight_id>/<int:return_flight_id>/', views.book, name='book'),
+
 ]

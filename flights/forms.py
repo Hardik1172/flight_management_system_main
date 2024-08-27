@@ -14,48 +14,75 @@ from django.db import models
 
 class DateInput(forms.DateInput):
     input_type = 'date'
+
 class PassengerForm(forms.ModelForm):
     class Meta:
         model = Passenger
         fields = ['first_name', 'last_name', 'passenger_type', 'ticket_class', 'meal_choice']
         widgets = {
             'passenger_type': forms.HiddenInput(),
+            'ticket_class': forms.Select(attrs={'class': 'form-control'}),
+            'meal_choice': forms.Select(attrs={'class': 'form-control'}),
         }
-
 class SearchForm(forms.Form):
     TRIP_CHOICES = (
         ('one_way', 'One Way'),
         ('round_trip', 'Round Trip'),
     )
     trip_type = forms.ChoiceField(choices=TRIP_CHOICES, widget=forms.RadioSelect)
-    origin = forms.ModelChoiceField(queryset=Airport.objects.all(), empty_label="Select Origin")
-    destination = forms.ModelChoiceField(queryset=Airport.objects.all(), empty_label="Select Destination")
-    departure_date = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}))
+    origin = forms.ModelChoiceField(
+        queryset=Airport.objects.all(),
+        empty_label="Select Origin",
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    destination = forms.ModelChoiceField(
+        queryset=Airport.objects.all(),
+        empty_label="Select Destination",
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    departure_date = forms.DateField(
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control', 'min': timezone.now().date().isoformat()})
+    )
+    return_date = forms.DateField(
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control', 'min': timezone.now().date().isoformat()}),
+        required=False
+    )
+    adults = forms.IntegerField(min_value=1, initial=1, widget=forms.NumberInput(attrs={'class': 'form-control'}))
+    children = forms.IntegerField(min_value=0, initial=0, widget=forms.NumberInput(attrs={'class': 'form-control'}))
+    infants = forms.IntegerField(min_value=0, initial=0, widget=forms.NumberInput(attrs={'class': 'form-control'}))
 
-    return_date = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}), required=False)
-    adults = forms.IntegerField(min_value=0, initial=0)
-    children = forms.IntegerField(min_value=0, initial=0)
-    infants = forms.IntegerField(min_value=0, initial=0)
+    def clean(self):
+        cleaned_data = super().clean()
+        origin = cleaned_data.get('origin')
+        destination = cleaned_data.get('destination')
+        departure_date = cleaned_data.get('departure_date')
+        return_date = cleaned_data.get('return_date')
 
+        if origin and destination and origin == destination:
+            raise forms.ValidationError("From & To airports cannot be the same.")
+
+        if departure_date and departure_date < timezone.now().date():
+            raise forms.ValidationError("Departure date cannot be in the past.")
+
+        if return_date and return_date < departure_date:
+            raise forms.ValidationError("Return date must be after departure date.")
+
+        return cleaned_data
+
+class PaymentForm(forms.ModelForm):
     class Meta:
-        model = Booking
-        fields = ['departure_date', 'return_date']
-
-
-
-
-
-
-class PaymentForm(forms.Form):
-    card_number = forms.CharField(max_length=16, min_length=16)
-    expiry_date = forms.DateField(widget=DateInput())
-    cvv = forms.CharField(max_length=3, min_length=3)
-
+        model = Payment
+        fields = ['card_number', 'cvv', 'expiry_date']
+        widgets = {
+            'card_number': forms.TextInput(attrs={'class': 'form-control'}),
+            'cvv': forms.TextInput(attrs={'class': 'form-control'}),
+            'expiry_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+        }
 
     def clean_expiry_date(self):
         expiry_date = self.cleaned_data['expiry_date']
-        if expiry_date < timezone.now().date() :
-             raise forms.ValidationError("Expiry date cannot be in the past.")
+        if expiry_date < timezone.now().date():
+            raise forms.ValidationError("Expiry date cannot be in the past.")
         return expiry_date
 
 
@@ -74,6 +101,9 @@ class CustomUserCreationForm(UserCreationForm):
             user.save()
         return user
 
+
+
+
 class FlightForm(forms.ModelForm):
     origin = forms.ModelChoiceField(
         queryset=Airport.objects.all(),
@@ -89,17 +119,48 @@ class FlightForm(forms.ModelForm):
     class Meta:
         model = Flight
         fields = ['flight_number', 'origin', 'destination', 'departure_time', 'arrival_time',
-                  'economy_price', 'business_price', 'available_seats', 'is_international', 'day_of_week']
+                  'economy_price', 'business_price', 'economy_seats', 'business_seats',
+                  'available_economy_seats', 'available_business_seats', 'is_international', 'day_of_week']
         widgets = {
             'flight_number': forms.TextInput(attrs={'class': 'form-control'}),
             'departure_time': forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
             'arrival_time': forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
             'economy_price': forms.NumberInput(attrs={'class': 'form-control'}),
             'business_price': forms.NumberInput(attrs={'class': 'form-control'}),
-            'available_seats': forms.NumberInput(attrs={'class': 'form-control'}),
+            'economy_seats': forms.NumberInput(attrs={'class': 'form-control'}),
+            'business_seats': forms.NumberInput(attrs={'class': 'form-control'}),
+            'available_economy_seats': forms.NumberInput(attrs={'class': 'form-control'}),
+            'available_business_seats': forms.NumberInput(attrs={'class': 'form-control'}),
             'is_international': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'day_of_week': forms.Select(attrs={'class': 'form-control'}),
         }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        origin = cleaned_data.get('origin')
+        destination = cleaned_data.get('destination')
+        departure_time = cleaned_data.get('departure_time')
+        arrival_time = cleaned_data.get('arrival_time')
+        economy_seats = cleaned_data.get('economy_seats')
+        business_seats = cleaned_data.get('business_seats')
+        available_economy_seats = cleaned_data.get('available_economy_seats')
+        available_business_seats = cleaned_data.get('available_business_seats')
+
+        if origin and destination and origin == destination:
+            raise forms.ValidationError("Origin and destination cannot be the same.")
+
+        if departure_time and arrival_time and departure_time >= arrival_time:
+            raise forms.ValidationError("Departure time must be before arrival time.")
+
+        if economy_seats is not None and available_economy_seats is not None:
+            if available_economy_seats > economy_seats:
+                raise forms.ValidationError("Available economy seats cannot exceed total economy seats.")
+
+        if business_seats is not None and available_business_seats is not None:
+            if available_business_seats > business_seats:
+                raise forms.ValidationError("Available business seats cannot exceed total business seats.")
+
+        return cleaned_data
 
 class StopoverFormSet(forms.BaseInlineFormSet):
     def clean(self):
@@ -123,37 +184,11 @@ StopoverInlineFormSet = forms.inlineformset_factory(
 class BookingForm(forms.ModelForm):
     class Meta:
         model = Booking
-        fields = []
-    def clean(self):
+        fields = ['ticket_class']
+        widgets = {
+            'ticket_class': forms.Select(attrs={'class': 'form-control'}),
+        }
 
-        cleaned_data = super().clean()
-        departure_date = cleaned_data.get('departure_date')
-        return_date = cleaned_data.get('return_date')
-        today = timezone.now().date()
-        expiry_date = cleaned_data.get('expiry_date')
-        destination_airport = Airport.objects.all().except("Airport used in origin")
-        origin_airport = Airport.objects.all().except("Airports used in destination")
-
-
-        if departure_date and departure_date < today:
-            return forms.ValidationError("Departure Date not valid")
-
-        if return_date and return_date < today:
-            return forms.ValidationError("Return Date cannot  be passed")
-
-        if departure_date and return_date < departure_date :
-            return forms.ValidationError("Return Date cannot be smaller than departure_date")
-
-        if expiry_date and expiry_date < today :
-            return forms.ValidationError("Expiry date cannot be passed")
-
-        if destination_airport == origin_airport :
-            return forms.ValidationError("destination and orign airport cannot be same . plz select differnt airport from one of them ")
-
-        return cleaned_data
-
-def get_total_passengers(self):
-    return self.adults + self.child + self.infant
 
 
 

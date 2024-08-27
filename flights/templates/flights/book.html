@@ -48,7 +48,6 @@
         </div>
     </div>
 
-
     <div class="card mt-4 mb-4">
         <div class="card-body">
             <h5 class="card-title">Booking Summary</h5>
@@ -59,7 +58,6 @@
         </div>
     </div>
 
-    {{ passenger_formset.management_form }}
     <button type="submit" class="btn btn-primary mt-3">Proceed to Payment</button>
 </form>
 
@@ -74,10 +72,37 @@
             <div class="card mb-3 passenger-form">
                 <div class="card-body">
                     <h5 class="card-title">__PASSENGER_TYPE__ Passenger</h5>
-                    {{ passenger_formset.empty_form.as_p|safe }}
+                    <input type="hidden" name="passenger-__PREFIX__-passenger_type" value="__PASSENGER_TYPE__">
+                    <div class="form-group">
+                        <label for="passenger-__PREFIX__-first_name">First Name:</label>
+                        <input type="text" name="passenger-__PREFIX__-first_name" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="passenger-__PREFIX__-last_name">Last Name:</label>
+                        <input type="text" name="passenger-__PREFIX__-last_name" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="passenger-__PREFIX__-ticket_class">Ticket Class:</label>
+                        <select name="passenger-__PREFIX__-ticket_class" class="form-control" required>
+                            <option value="economy">Economy</option>
+                            <option value="business">Business</option>
+                            <option value="first">First Class</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="passenger-__PREFIX__-meal_choice">Meal Choice:</label>
+                        <select name="passenger-__PREFIX__-meal_choice" class="form-control" required>
+                            <option value="standard">Standard</option>
+                            <option value="vegetarian">Vegetarian</option>
+                            <option value="kosher">Kosher</option>
+                            <option value="halal">Halal</option>
+                        </select>
+                    </div>
                 </div>
             </div>
         `;
+
+        let passengerCount = 0;
 
         form.addEventListener('submit', function(event) {
             if (!form.checkValidity()) {
@@ -94,29 +119,28 @@
                 const currentCount = document.querySelectorAll(`#${passengerType}Forms .passenger-form`).length;
 
                 if (currentCount < max) {
-                    let newForm = passengerFormTemplate.replace('__PASSENGER_TYPE__', passengerType.charAt(0).toUpperCase() + passengerType.slice(1));
-                    newForm = newForm.replace(/passenger-__prefix__/g, `passenger-${passengerType}-${currentCount}`);
-                    newForm = newForm.replace(/id_passenger-__prefix__/g, `id_passenger-${passengerType}-${currentCount}`);
+                    let newForm = passengerFormTemplate
+                        .replace(/__PASSENGER_TYPE__/g, passengerType)
+                        .replace(/__PREFIX__/g, passengerCount);
 
-                    const tempDiv = document.createElement('div');
-                    tempDiv.innerHTML = newForm;
-
-                    const formFields = tempDiv.querySelector('.passenger-form');
-                    formFields.querySelector('[name$="passenger_type"]').value = passengerType;
-
-                    document.querySelector(`#${passengerType}Forms`).appendChild(formFields);
+                    document.querySelector(`#${passengerType}Forms`).insertAdjacentHTML('beforeend', newForm);
 
                     document.querySelector(`#${passengerType}Count`).textContent = currentCount + 1;
+                    passengerCount++;
 
                     if (currentCount + 1 >= max) {
                         this.disabled = true;
                     }
-
-                    // Update the management form
-                    const totalForms = document.querySelector('[name$="TOTAL_FORMS"]');
-                    totalForms.value = parseInt(totalForms.value) + 1;
                 }
             });
+        });
+
+        // Trigger the add passenger buttons to create initial forms
+        addPassengerButtons.forEach(button => {
+            const max = parseInt(button.dataset.max);
+            for (let i = 0; i < max; i++) {
+                button.click();
+            }
         });
     });
 </script>

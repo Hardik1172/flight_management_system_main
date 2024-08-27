@@ -20,7 +20,7 @@
         <h5 class="card-title">Booking Information</h5>
         <p><strong>Booking Date:</strong> {{ booking.booking_date|date:"d M Y H:i" }}</p>
         <p><strong>Status:</strong> {{ booking.status }}</p>
-        <p><strong>Ticket Class:</strong> {{ booking.get_ticket_class_display }}</p>
+
     </div>
 </div>
 
@@ -30,10 +30,11 @@
         {% for passenger in booking.passengers.all %}
         <div class="passenger-info">
             <p><strong>Passenger ID:</strong> {{ passenger.passenger_id|default:"N/A" }}</p>
-            <p><strong>Name:</strong> {{ passenger.passenger.first_name}} {{ passenger.passenger.last_name}}</p>
-            <p><strong>Type:</strong> {{ passenger.get_passenger_type_display|default:"N/A" }}</p>
+            <p><strong>Name:</strong> {{ passenger.first_name }} {{ passenger.last_name }}</p>
+            <p><strong>Type:</strong> {{ passenger.get_passenger_type_display }}</p>
             <p><strong>Seat Number:</strong> {{ passenger.seat_number|default:"Not assigned" }}</p>
-            <p><strong>Meal Choice:</strong> {{ passenger.get_meal_choice_display|default:"N/A" }}</p>
+            <p><strong>Meal Choice:</strong> {{ passenger.get_meal_choice_display }}</p>
+            <p><strong>Ticket Class:</strong> {{ passenger.get_ticket_class_display }}</p>
         </div>
         {% if not forloop.last %}<hr>{% endif %}
         {% empty %}
@@ -53,6 +54,21 @@
         <p><strong>Departure:</strong> {{ booking.return_flight.departure_time|date:"d M Y H:i" }}</p>
         <p><strong>Arrival:</strong> {{ booking.return_flight.arrival_time|date:"d M Y H:i" }}</p>
         <p><strong>Duration:</strong> {{ booking.return_flight.duration }}</p>
+    </div>
+</div>
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title">Booking Information</h5>
+        <p><strong>Booking Date:</strong> {{ booking.booking_date|date:"d M Y H:i" }}</p>
+        <p><strong>Status:</strong> {{ booking.status }}</p>
+        <p><strong>Ticket Class:</strong> {{ booking.get_ticket_class_display }}</p>
+        {% if booking.status == 'Confirmed' %}
+        <form action="{% url 'cancel_booking' booking.id %}" method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to cancel this booking?')">Cancel Booking</button>
+        </form>
+
+
     </div>
 </div>
 {% endif %}

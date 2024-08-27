@@ -20,8 +20,9 @@ from django.contrib.auth import views as auth_views
 from flights import views as flight_views
 
 urlpatterns = [
+    path('', flight_views.index, name='index'),  # Add this line
     path('admin/', admin.site.urls),
-    path('', include('flights.urls')),
+    path('flights/', include('flights.urls')),
     path('accounts/', include('django.contrib.auth.urls')),
     path('register/', flight_views.register, name='register'),
     path('logout/', auth_views.LogoutView.as_view(next_page='index'), name='logout'),

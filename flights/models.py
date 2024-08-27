@@ -5,7 +5,6 @@ import random
 import string
 from django.utils import timezone
 
-
 class Airport(models.Model):
     city = models.CharField(max_length=100)
     code = models.CharField(max_length=3)
@@ -13,7 +12,6 @@ class Airport(models.Model):
 
     def __str__(self):
         return f"{self.city} ({self.code})"
-
 
 class Flight(models.Model):
     flight_number = models.CharField(max_length=10)
@@ -23,7 +21,11 @@ class Flight(models.Model):
     arrival_time = models.DateTimeField()
     economy_price = models.DecimalField(max_digits=10, decimal_places=2)
     business_price = models.DecimalField(max_digits=10, decimal_places=2)
-    available_seats = models.IntegerField(default=100)
+    economy_seats = models.IntegerField(default=150)
+    business_seats = models.IntegerField(default=50)
+    available_economy_seats = models.IntegerField(default=150)
+    available_business_seats = models.IntegerField(default=50)
+
     is_international = models.BooleanField(default=False)
     day_of_week = models.IntegerField(choices=[
         (0, 'Monday'),
@@ -37,6 +39,23 @@ class Flight(models.Model):
 
 
 
+    def update_available_seats(self):
+        booked_economy = self.booking_set.filter(status='Confirmed', ticket_class='economy').aggregate(
+            total=models.Sum('adults') + models.Sum('children') + models.Sum('infants'))['total'] or 0
+        booked_business = self.booking_set.filter(status='Confirmed', ticket_class='business').aggregate(
+            total=models.Sum('adults') + models.Sum('children') + models.Sum('infants'))['total'] or 0
+
+        self.available_economy_seats = self.economy_seats - booked_economy
+        self.available_business_seats = self.business_seats - booked_business
+        self.save()
+
+    def has_available_seats(self, ticket_class, num_passengers):
+        if ticket_class == 'economy':
+            return self.available_economy_seats >= num_passengers
+        elif ticket_class == 'business':
+            return self.available_business_seats >= num_passengers
+        return False
+
     def save(self, *args, **kwargs):
         self.day_of_week = self.departure_time.weekday()
         super().save(*args, **kwargs)
@@ -49,7 +68,6 @@ class Flight(models.Model):
 
     def __str__(self):
         return f"{self.flight_number}: {self.origin} to {self.destination}"
-
 
 class Stopover(models.Model):
     flight = models.ForeignKey(Flight, on_delete=models.CASCADE, related_name='stopovers')
@@ -70,11 +88,34 @@ class Booking(models.Model):
     return_flight = models.ForeignKey(Flight, on_delete=models.SET_NULL, null=True, blank=True,
                                     related_name='return_bookings')
     booking_date = models.DateTimeField(default=timezone.now)
-    status = models.CharField(max_length=20, default='Confirmed')
     adults = models.IntegerField(default=0)
     children = models.IntegerField(default=0)
     infants = models.IntegerField(default=0)
     ticket_class = models.CharField(max_length=10, choices=TICKET_CLASSES, default='economy')
+    STATUS_CHOICES = (
+        ('Confirmed', 'Confirmed'),
+        ('Cancelled', 'Cancelled'),
+    )
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Confirmed')
+
+
+    def cancel(self):
+        if self.status == 'Confirmed':
+            self.status = 'Cancelled'
+            self.save()
+            self.flight.update_available_seats()
+            if self.return_flight:
+                self.return_flight.update_available_seats()
+
+
+
+
+
+
+
+
+
+
 
     def total_price(self):
         base_price = self.flight.business_price if self.ticket_class == 'business' else self.flight.economy_price
@@ -144,8 +185,10 @@ class Passenger(models.Model):
             seat_number = f"{row}{seat}"
             seat_taken = Passenger.objects.filter(booking__flight=self.booking.flight, seat_number=seat_number).exists()
         return seat_number
+
     def __str__(self):
         return f"{self.first_name} {self.last_name} ({self.get_passenger_type_display()})"
+
 class Payment(models.Model):
     booking = models.OneToOneField(Booking, on_delete=models.CASCADE)
     card_number = models.CharField(max_length=16)
@@ -153,7 +196,6 @@ class Payment(models.Model):
     expiry_date = models.DateField()
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     timestamp = models.DateTimeField(auto_now_add=True)
-
 
     def __str__(self):
         return f"Payment for Booking {self.booking.id}"
@@ -168,6 +210,7 @@ class SearchHistory(models.Model):
     children = models.IntegerField(default=0)
     infants = models.IntegerField(default=0)
     search_date = models.DateTimeField(auto_now_add=True)
+
     class Meta:
         ordering = ['-search_date']
 

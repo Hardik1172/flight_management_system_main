@@ -56,7 +56,9 @@ from .forms import PaymentForm
 from django.utils import timezone
 from django.urls import reverse
 from django.db.utils import IntegrityError
-
+from django.core.serializers import serialize
+from django.http import JsonResponse
+from .models import Airport
 
 
 logger = logging.getLogger(__name__)
@@ -99,29 +101,26 @@ def search(request):
                 infants=form.cleaned_data['infants']
             )
 
-
-
-
-
             # Store search parameters in session
-            search_params = form.cleaned_data.copy()
-            search_params['origin'] = search_params['origin'].id
-            search_params['destination'] = search_params['destination'].id
+            request.session['search_params'] = {
+                'origin': form.cleaned_data['origin'].id,
+                'destination': form.cleaned_data['destination'].id,
+                'departure_date': form.cleaned_data['departure_date'].isoformat(),
+                'return_date': form.cleaned_data['return_date'].isoformat() if form.cleaned_data[
+                    'return_date'] else None,
+                'adults': form.cleaned_data['adults'],
+                'children': form.cleaned_data['children'],
+                'infants': form.cleaned_data['infants'],
+                'trip_type': form.cleaned_data['trip_type']
+            }
 
-            # Convert date objects to strings
-            search_params['departure_date'] = search_params['departure_date'].isoformat()
-            if search_params['return_date']:
-                search_params['return_date'] = search_params['return_date'].isoformat()
-
-            request.session['search_params'] = search_params
-
-
-            # Redirect to search results
             return redirect('search_results')
+        else:
+            for error in form.non_field_errors():
+                messages.error(request, error)
     else:
         form = SearchForm()
 
-    # Retrieve search history
     search_history = SearchHistory.objects.filter(user=request.user).order_by('-search_date')[
                      :5] if request.user.is_authenticated else []
 
@@ -132,6 +131,7 @@ def search(request):
     return render(request, 'flights/search.html', context)
 
 
+# flights/views.py
 
 @login_required
 def book(request, flight_id, return_flight_id=None):
@@ -140,49 +140,50 @@ def book(request, flight_id, return_flight_id=None):
     if return_flight_id:
         return_flight = get_object_or_404(Flight, pk=return_flight_id)
 
-
     search_params = request.session.get('search_params', {})
     adults = int(search_params.get('adults', 0))
     children = int(search_params.get('children', 0))
     infants = int(search_params.get('infants', 0))
     total_passengers = adults + children + infants
 
-    PassengerFormSet = formset_factory(PassengerForm, extra=total_passengers)
-
     if request.method == 'POST':
         booking_form = BookingForm(request.POST)
-        passenger_formset = PassengerFormSet(request.POST, prefix='passenger')
+        if booking_form.is_valid():
+            ticket_class = booking_form.cleaned_data['ticket_class']
 
-        if booking_form.is_valid() and passenger_formset.is_valid():
-            booking = Booking.objects.create(
-                user=request.user,
-                flight=flight,
-                return_flight=return_flight,
-                status='Pending',
-                adults=adults,
-                children=children,
-                infants=infants
-            )
+            if flight.available_economy_seats & flight.available_business_seats< total_passengers:
+                messages.error(request, "Not enough seats available for this flight.")
+                return render(request, 'flights/book.html',
+                              {'booking_form': booking_form, 'flight': flight, 'return_flight': return_flight})
 
-            passenger_types = ['adult'] * adults + ['child'] * children + ['infant'] * infants
-            for form, p_type in zip(passenger_formset, passenger_types):
-                passenger = form.save(commit=False)
-                passenger.booking = booking
-                passenger.passenger_type = p_type
-                passenger.save()
+            booking = booking_form.save(commit=False)
+            booking.user = request.user
+            booking.flight = flight
+            booking.return_flight = return_flight
+            booking.status = 'Confirmed'
+            booking.adults = adults
+            booking.children = children
+            booking.infants = infants
+            booking.save()
 
-            return redirect(reverse('payment', kwargs={'booking_id': booking.id}))
+            flight.update_available_seats()
+            if return_flight:
+                return_flight.update_available_seats()
+
+            # Process passenger forms
+            for i in range(total_passengers):
+                passenger_form = PassengerForm(request.POST, prefix=f'passenger-{i}')
+                if passenger_form.is_valid():
+                    passenger = passenger_form.save(commit=False)
+                    passenger.booking = booking
+                    passenger.save()
+
+            return redirect('payment', booking_id=booking.id)
     else:
-        initial_data = {
-            'departure_date': max(flight.departure_time.date(), timezone.now().date()),
-            'return_date': return_flight.departure_time.date() if return_flight else None
-        }
-        booking_form = BookingForm(initial=initial_data)
-        passenger_formset = PassengerFormSet(prefix='passenger')
+        booking_form = BookingForm()
 
     context = {
         'booking_form': booking_form,
-        'passenger_formset': passenger_formset,
         'flight': flight,
         'return_flight': return_flight,
         'adults': adults,
@@ -192,10 +193,6 @@ def book(request, flight_id, return_flight_id=None):
     }
     return render(request, 'flights/book.html', context)
 
-
-
-# views.py
-
 @login_required
 def bookings(request):
     bookings = Booking.objects.filter(user=request.user).select_related('flight').prefetch_related('passengers').order_by('-booking_date')
@@ -204,19 +201,29 @@ def bookings(request):
 @login_required
 def booking_detail(request, booking_id):
     booking = get_object_or_404(Booking.objects.prefetch_related('passengers'), id=booking_id, user=request.user)
-    passengers = booking.passengers.all()
-    print(f"Number of passengers: {passengers.count()}")  # Debug print
-    for passenger in passengers:
-        print(f"Passenger: {passenger.first_name} {passenger.last_name}")  # Debug print
-    return render(request, 'flights/booking_detail.html', {'booking': booking, 'passengers': passengers})
+    return render(request, 'flights/booking_detail.html', {'booking': booking})
 
 
+def get_destinations(request, origin_id):
+    destinations = Airport.objects.exclude(id=origin_id).values('id', 'name', 'code')
+    return JsonResponse(list(destinations), safe=False)
+
+@login_required
+def cancel_booking(request, booking_id):
+    booking = get_object_or_404(Booking, id=booking_id, user=request.user)
+    if booking.status == 'Confirmed':
+        booking.cancel()
+        messages.success(request, "Your booking has been successfully cancelled.")
+    else:
+        messages.error(request, "This booking cannot be cancelled.")
+    return redirect('booking_detail.html', booking_id=booking.id)
 
 def search_results(request):
     search_params = request.session.get('search_params', {})
     if not search_params:
         messages.error(request, "Please perform a search first.")
         return redirect('search')
+
 
     origin = Airport.objects.get(id=search_params['origin'])
     destination = Airport.objects.get(id=search_params['destination'])
@@ -229,11 +236,16 @@ def search_results(request):
 
     total_passengers = adults + children + infants
 
+
+
+
+
     outbound_flights = Flight.objects.filter(
         origin=origin,
         destination=destination,
         departure_time__date=departure_date,
-        available_seats__gte=total_passengers
+        available_economy_seats__gte=total_passengers,
+        available_business_seats__gte=total_passengers
     ).prefetch_related('stopovers')
 
     return_flights = None
@@ -242,7 +254,8 @@ def search_results(request):
             origin=destination,
             destination=origin,
             departure_time__date=return_date,
-            available_seats__gte=total_passengers
+            available_economy_seats__gte=total_passengers,
+            available_business_seats__gte=total_passengers
         ).prefetch_related('stopovers')
 
     context = {
@@ -264,31 +277,30 @@ def assign_seat(flight, ticket_class):
         if not Passenger.objects.filter(booking__flight=flight, seat_number=seat_number).exists():
             return seat_number
 
-
-# views.py
-
 @login_required
 def payment(request, booking_id):
     booking = get_object_or_404(Booking, id=booking_id, user=request.user)
+    total_price = booking.total_price()
 
     if request.method == 'POST':
         payment_form = PaymentForm(request.POST)
         if payment_form.is_valid():
-            # Process payment here
+            # Process payment here (you would typically integrate with a payment gateway)
             booking.status = 'Confirmed'
             booking.save()
+            messages.success(request, "Payment successful. Your booking is confirmed.")
             return redirect('booking_confirmation', booking_id=booking.id)
-
-    if payment(request, booking_id):
-        booking = get_object_or_404(Booking , id = booking_id, user = request.user)
-        if request.method == 'POST':
-            payment_form = PaymentForm(request.POST)
-
-
     else:
         payment_form = PaymentForm()
 
-    return render(request, 'flights/payment.html', {'booking': booking, 'payment_form': payment_form})
+    context = {
+        'booking': booking,
+        'payment_form': payment_form,
+        'total_price': total_price,
+    }
+    return render(request, 'flights/payment.html', context)
+
+
 
 
 @login_required
