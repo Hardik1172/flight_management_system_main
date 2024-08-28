@@ -22,8 +22,6 @@ urlpatterns = [
     path('booking_confirmation/<int:booking_id>/', views.booking_confirmation, name='booking_confirmation'),
     path('flight/<int:flight_id>/', views.flight_detail, name='flight_detail'),
     path('search/results/', views.search_results, name='search_results'),
-    path('book/<int:flight_id>/<int:return_flight_id>/', views.book, name='book_round_trip'),
-    path('cancel_booking/<int:booking_id>/', views.cancel_booking, name='cancel_booking'),
-    path('book/<int:outbound_flight_id>/<int:return_flight_id>/', views.book, name='book'),
-
+    path('cancel_booking/', views.cancel_booking, name='cancel_booking'),
+    path('confirm_cancel_booking/<str:passenger_id>/', views.confirm_cancel_booking, name='confirm_cancel_booking'),
 ]

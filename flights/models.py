@@ -4,6 +4,7 @@ from decimal import Decimal
 import random
 import string
 from django.utils import timezone
+import uuid
 
 class Airport(models.Model):
     city = models.CharField(max_length=100)
@@ -84,8 +85,8 @@ class Booking(models.Model):
         ('business', 'Business'),
     )
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    flight = models.ForeignKey(Flight, on_delete=models.CASCADE)
-    return_flight = models.ForeignKey(Flight, on_delete=models.SET_NULL, null=True, blank=True,
+    flight = models.ForeignKey('Flight', on_delete=models.CASCADE)
+    return_flight = models.ForeignKey('Flight', on_delete=models.SET_NULL, null=True, blank=True,
                                     related_name='return_bookings')
     booking_date = models.DateTimeField(default=timezone.now)
     adults = models.IntegerField(default=0)
@@ -95,27 +96,21 @@ class Booking(models.Model):
     STATUS_CHOICES = (
         ('Confirmed', 'Confirmed'),
         ('Cancelled', 'Cancelled'),
+        ('Partially Cancelled', 'Partially Cancelled'),
     )
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Confirmed')
 
+    def update_status(self):
+        cancelled_passengers = self.passengers.filter(is_cancelled=True).count()
+        total_passengers = self.passengers.count()
 
-    def cancel(self):
-        if self.status == 'Confirmed':
+        if cancelled_passengers == total_passengers:
             self.status = 'Cancelled'
-            self.save()
-            self.flight.update_available_seats()
-            if self.return_flight:
-                self.return_flight.update_available_seats()
-
-
-
-
-
-
-
-
-
-
+        elif cancelled_passengers > 0:
+            self.status = 'Partially Cancelled'
+        else:
+            self.status = 'Confirmed'
+        self.save()
 
     def total_price(self):
         base_price = self.flight.business_price if self.ticket_class == 'business' else self.flight.economy_price
@@ -127,14 +122,8 @@ class Booking(models.Model):
 
         return total.quantize(Decimal('0.01'))
 
-    def booking_time(self):
-        return timezone.localtime(self.booking_date).strftime("%H:%M")
-
     def __str__(self):
         return f"Booking {self.id} - {self.user.username} on {self.flight}"
-
-    def get_total_passengers(self):
-        return self.adults + self.children + self.infants
 
 class Passenger(models.Model):
     PASSENGER_TYPES = [
@@ -151,13 +140,14 @@ class Passenger(models.Model):
         ('business', 'Business'),
     )
 
-    booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name='passengers')
+    booking = models.ForeignKey('Booking', on_delete=models.CASCADE, related_name='passengers')
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
     passenger_type = models.CharField(max_length=10, choices=PASSENGER_TYPES)
+    is_cancelled = models.BooleanField(default=False)
     meal_choice = models.CharField(max_length=20, choices=MEAL_CHOICES, default='vegetarian')
     seat_number = models.CharField(max_length=5, null=True, blank=True)
-    passenger_id = models.CharField(max_length=10, unique=True, null=True, blank=True)
+    passenger_id = models.CharField(max_length=7, unique=True)
     ticket_class = models.CharField(max_length=10, choices=TICKET_CLASSES, default='economy')
 
     def save(self, *args, **kwargs):
@@ -168,10 +158,7 @@ class Passenger(models.Model):
         super().save(*args, **kwargs)
 
     def generate_passenger_id(self):
-        if self.passenger_type and len(self.passenger_type) > 0:
-            prefix = self.passenger_type[0].upper()
-        else:
-            prefix = 'P'  # Default prefix if passenger_type is empty
+        prefix = self.passenger_type[0].upper()
         while True:
             passenger_id = f"{prefix}{random.randint(100000, 999999)}"
             if not Passenger.objects.filter(passenger_id=passenger_id).exists():
@@ -188,6 +175,11 @@ class Passenger(models.Model):
 
     def __str__(self):
         return f"{self.first_name} {self.last_name} ({self.get_passenger_type_display()})"
+
+    def cancel(self):
+        self.is_cancelled = True
+        self.save()
+        self.booking.update_status()
 
 class Payment(models.Model):
     booking = models.OneToOneField(Booking, on_delete=models.CASCADE)

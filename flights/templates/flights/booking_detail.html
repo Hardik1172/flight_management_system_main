@@ -1,76 +1,146 @@
 {% extends "layout.html" %}
+
 {% block content %}
 <h1>Booking Details</h1>
 
-<div class="card mb-4">
-    <div class="card-body">
-        <h5 class="card-title">Flight Details</h5>
-        <p><strong>Flight ID:</strong> {{ booking.flight.id }}</p>
-        <p><strong>Flight Number:</strong> {{ booking.flight.flight_number }}</p>
-        <p><strong>From:</strong> {{ booking.flight.origin.city }} ({{ booking.flight.origin.code }})</p>
-        <p><strong>To:</strong> {{ booking.flight.destination.city }} ({{ booking.flight.destination.code }})</p>
-        <p><strong>Departure:</strong> {{ booking.flight.departure_time|date:"d M Y H:i" }}</p>
-        <p><strong>Arrival:</strong> {{ booking.flight.arrival_time|date:"d M Y H:i" }}</p>
-        <p><strong>Duration:</strong> {{ booking.flight.duration }}</p>
-    </div>
-</div>
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th colspan="2">Flight Details</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <th>Flight ID</th>
+            <td>{{ booking.flight.id }}</td>
+        </tr>
+        <tr>
+            <th>Flight Number</th>
+            <td>{{ booking.flight.flight_number }}</td>
+        </tr>
+        <tr>
+            <th>From</th>
+            <td>{{ booking.flight.origin.city }} ({{ booking.flight.origin.code }})</td>
+        </tr>
+        <tr>
+            <th>To</th>
+            <td>{{ booking.flight.destination.city }} ({{ booking.flight.destination.code }})</td>
+        </tr>
+        <tr>
+            <th>Departure</th>
+            <td>{{ booking.flight.departure_time|date:"d M Y H:i" }}</td>
+        </tr>
+        <tr>
+            <th>Arrival</th>
+            <td>{{ booking.flight.arrival_time|date:"d M Y H:i" }}</td>
+        </tr>
+        <tr>
+            <th>Duration</th>
+            <td>{{ booking.flight.duration }}</td>
+        </tr>
+    </tbody>
+</table>
 
-<div class="card mb-4">
-    <div class="card-body">
-        <h5 class="card-title">Booking Information</h5>
-        <p><strong>Booking Date:</strong> {{ booking.booking_date|date:"d M Y H:i" }}</p>
-        <p><strong>Status:</strong> {{ booking.status }}</p>
+<table class="table table-bordered mt-4">
+    <thead>
+        <tr>
+            <th colspan="2">Booking Information</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <th>Booking Date</th>
+            <td>{{ booking.booking_date|date:"d M Y H:i" }}</td>
+        </tr>
+        <tr>
+            <th>Status</th>
+            <td>{{ booking.status }}</td>
+        </tr>
+        <tr>
+            <th>Ticket Class</th>
+            <td>{{ booking.get_ticket_class_display }}</td>
+        </tr>
+    </tbody>
+</table>
 
-    </div>
-</div>
-
-<div class="card mb-4">
-    <div class="card-body">
-        <h5 class="card-title">Passenger Information</h5>
+<table class="table table-bordered mt-4">
+    <thead>
+        <tr>
+            <th colspan="7">Passenger Information</th>
+        </tr>
+        <tr>
+            <th>Passenger ID</th>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Seat Number</th>
+            <th>Meal Choice</th>
+            <th>Ticket Class</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody>
         {% for passenger in booking.passengers.all %}
-        <div class="passenger-info">
-            <p><strong>Passenger ID:</strong> {{ passenger.passenger_id|default:"N/A" }}</p>
-            <p><strong>Name:</strong> {{ passenger.first_name }} {{ passenger.last_name }}</p>
-            <p><strong>Type:</strong> {{ passenger.get_passenger_type_display }}</p>
-            <p><strong>Seat Number:</strong> {{ passenger.seat_number|default:"Not assigned" }}</p>
-            <p><strong>Meal Choice:</strong> {{ passenger.get_meal_choice_display }}</p>
-            <p><strong>Ticket Class:</strong> {{ passenger.get_ticket_class_display }}</p>
-        </div>
-        {% if not forloop.last %}<hr>{% endif %}
+        <tr>
+            <td>{{ passenger.passenger_id }}</td>
+            <td>{{ passenger.first_name }} {{ passenger.last_name }}</td>
+            <td>{{ passenger.get_passenger_type_display }}</td>
+            <td>{{ passenger.seat_number|default:"Not assigned" }}</td>
+            <td>{{ passenger.get_meal_choice_display }}</td>
+            <td>{{ passenger.get_ticket_class_display }}</td>
+            <td>
+                {% if passenger.is_cancelled %}
+                    Cancelled
+                {% else %}
+                    Confirmed
+                {% endif %}
+            </td>
+        </tr>
         {% empty %}
-        <p>No passenger information available.</p>
+        <tr>
+            <td colspan="7">No passenger information available.</td>
+        </tr>
         {% endfor %}
-    </div>
-</div>
+    </tbody>
+</table>
 
 {% if booking.return_flight %}
-<div class="card mb-4">
-    <div class="card-body">
-        <h5 class="card-title">Return Flight Details</h5>
-        <p><strong>Flight ID:</strong> {{ booking.return_flight.id }}</p>
-        <p><strong>Flight Number:</strong> {{ booking.return_flight.flight_number }}</p>
-        <p><strong>From:</strong> {{ booking.return_flight.origin.city }} ({{ booking.return_flight.origin.code }})</p>
-        <p><strong>To:</strong> {{ booking.return_flight.destination.city }} ({{ booking.return_flight.destination.code }})</p>
-        <p><strong>Departure:</strong> {{ booking.return_flight.departure_time|date:"d M Y H:i" }}</p>
-        <p><strong>Arrival:</strong> {{ booking.return_flight.arrival_time|date:"d M Y H:i" }}</p>
-        <p><strong>Duration:</strong> {{ booking.return_flight.duration }}</p>
-    </div>
-</div>
-<div class="card mb-4">
-    <div class="card-body">
-        <h5 class="card-title">Booking Information</h5>
-        <p><strong>Booking Date:</strong> {{ booking.booking_date|date:"d M Y H:i" }}</p>
-        <p><strong>Status:</strong> {{ booking.status }}</p>
-        <p><strong>Ticket Class:</strong> {{ booking.get_ticket_class_display }}</p>
-        {% if booking.status == 'Confirmed' %}
-        <form action="{% url 'cancel_booking' booking.id %}" method="post">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to cancel this booking?')">Cancel Booking</button>
-        </form>
-
-
-    </div>
-</div>
+<table class="table table-bordered mt-4">
+    <thead>
+        <tr>
+            <th colspan="2">Return Flight Details</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <th>Flight ID</th>
+            <td>{{ booking.return_flight.id }}</td>
+        </tr>
+        <tr>
+            <th>Flight Number</th>
+            <td>{{ booking.return_flight.flight_number }}</td>
+        </tr>
+        <tr>
+            <th>From</th>
+            <td>{{ booking.return_flight.origin.city }} ({{ booking.return_flight.origin.code }})</td>
+        </tr>
+        <tr>
+            <th>To</th>
+            <td>{{ booking.return_flight.destination.city }} ({{ booking.return_flight.destination.code }})</td>
+        </tr>
+        <tr>
+            <th>Departure</th>
+            <td>{{ booking.return_flight.departure_time|date:"d M Y H:i" }}</td>
+        </tr>
+        <tr>
+            <th>Arrival</th>
+            <td>{{ booking.return_flight.arrival_time|date:"d M Y H:i" }}</td>
+        </tr>
+        <tr>
+            <th>Duration</th>
+            <td>{{ booking.return_flight.duration }}</td>
+        </tr>
+    </tbody>
+</table>
 {% endif %}
 
 {% endblock %}

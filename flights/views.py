@@ -59,7 +59,16 @@ from django.db.utils import IntegrityError
 from django.core.serializers import serialize
 from django.http import JsonResponse
 from .models import Airport
-
+from  django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from .models import Booking, Passenger
+from django.http import HttpResponseRedirect
+from django.urls import reverse
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import get_object_or_404, redirect
+from django.contrib import messages
+from .models import Booking, Passenger
 
 logger = logging.getLogger(__name__)
 
@@ -148,42 +157,62 @@ def book(request, flight_id, return_flight_id=None):
 
     if request.method == 'POST':
         booking_form = BookingForm(request.POST)
-        if booking_form.is_valid():
+        passenger_forms = [PassengerForm(request.POST, prefix=f'passenger-{i}') for i in range(total_passengers)]
+
+        if booking_form.is_valid() and all(form.is_valid() for form in passenger_forms):
             ticket_class = booking_form.cleaned_data['ticket_class']
 
-            if flight.available_economy_seats & flight.available_business_seats< total_passengers:
-                messages.error(request, "Not enough seats available for this flight.")
+            # Check seat availability
+            if ticket_class == 'economy' and flight.available_economy_seats < total_passengers:
+                messages.error(request, "Not enough economy seats available for this flight.")
                 return render(request, 'flights/book.html',
-                              {'booking_form': booking_form, 'flight': flight, 'return_flight': return_flight})
+                              {'booking_form': booking_form, 'passenger_forms': passenger_forms, 'flight': flight,
+                               'return_flight': return_flight})
+            elif ticket_class == 'business' and flight.available_business_seats < total_passengers:
+                messages.error(request, "Not enough business seats available for this flight.")
+                return render(request, 'flights/book.html',
+                              {'booking_form': booking_form, 'passenger_forms': passenger_forms, 'flight': flight,
+                               'return_flight': return_flight})
 
+            # If seats are available, proceed with booking
             booking = booking_form.save(commit=False)
             booking.user = request.user
             booking.flight = flight
             booking.return_flight = return_flight
-            booking.status = 'Confirmed'
+            booking.status = 'Pending'  # Change status to 'Pending' until payment is confirmed
             booking.adults = adults
             booking.children = children
             booking.infants = infants
             booking.save()
 
-            flight.update_available_seats()
-            if return_flight:
-                return_flight.update_available_seats()
+            # Save passengers
+            for form in passenger_forms:
+                passenger = form.save(commit=False)
+                passenger.booking = booking
+                passenger.save()
 
-            # Process passenger forms
-            for i in range(total_passengers):
-                passenger_form = PassengerForm(request.POST, prefix=f'passenger-{i}')
-                if passenger_form.is_valid():
-                    passenger = passenger_form.save(commit=False)
-                    passenger.booking = booking
-                    passenger.save()
+            # Update available seats
+            if ticket_class == 'economy':
+                flight.available_economy_seats -= total_passengers
+            else:
+                flight.available_business_seats -= total_passengers
+            flight.save()
+
+            if return_flight:
+                if ticket_class == 'economy':
+                    return_flight.available_economy_seats -= total_passengers
+                else:
+                    return_flight.available_business_seats -= total_passengers
+                return_flight.save()
 
             return redirect('payment', booking_id=booking.id)
     else:
         booking_form = BookingForm()
+        passenger_forms = [PassengerForm(prefix=f'passenger-{i}') for i in range(total_passengers)]
 
     context = {
         'booking_form': booking_form,
+        'passenger_forms': passenger_forms,
         'flight': flight,
         'return_flight': return_flight,
         'adults': adults,
@@ -193,14 +222,16 @@ def book(request, flight_id, return_flight_id=None):
     }
     return render(request, 'flights/book.html', context)
 
+
 @login_required
 def bookings(request):
-    bookings = Booking.objects.filter(user=request.user).select_related('flight').prefetch_related('passengers').order_by('-booking_date')
+    bookings = Booking.objects.filter(user=request.user).order_by('-booking_date')
     return render(request, 'flights/bookings.html', {'bookings': bookings})
+
 
 @login_required
 def booking_detail(request, booking_id):
-    booking = get_object_or_404(Booking.objects.prefetch_related('passengers'), id=booking_id, user=request.user)
+    booking = get_object_or_404(Booking, id=booking_id, user=request.user)
     return render(request, 'flights/booking_detail.html', {'booking': booking})
 
 
@@ -209,14 +240,43 @@ def get_destinations(request, origin_id):
     return JsonResponse(list(destinations), safe=False)
 
 @login_required
-def cancel_booking(request, booking_id):
-    booking = get_object_or_404(Booking, id=booking_id, user=request.user)
-    if booking.status == 'Confirmed':
-        booking.cancel()
-        messages.success(request, "Your booking has been successfully cancelled.")
-    else:
-        messages.error(request, "This booking cannot be cancelled.")
-    return redirect('booking_detail.html', booking_id=booking.id)
+def cancel_booking(request):
+    if request.method == 'POST':
+        passenger_id = request.POST.get('passenger_id')
+        try:
+            passenger = Passenger.objects.get(passenger_id=passenger_id)
+            if passenger.booking.user != request.user:
+                messages.error(request, "You don't have permission to cancel this booking.")
+                return redirect('cancel_booking')
+            return render(request, 'flights/cancel_booking.html', {'passenger': passenger})
+        except Passenger.DoesNotExist:
+            messages.error(request, "No passenger found with this ID.")
+    return render(request, 'flights/cancel_booking.html')
+
+
+
+@login_required
+def confirm_cancel_booking(request, passenger_id):
+    passenger = get_object_or_404(Passenger, passenger_id=passenger_id)
+    if passenger.booking.user != request.user:
+        messages.error(request, "You don't have permission to cancel this booking.")
+        return redirect('cancel_booking')
+
+    if request.method == 'POST':
+        if not passenger.is_cancelled:
+            passenger.cancel()
+            messages.success(request, f"Booking for passenger {passenger.first_name} {passenger.last_name} has been cancelled.")
+        else:
+            messages.error(request, "This booking is already cancelled.")
+        return redirect('bookings')
+
+    context = {
+        'passenger': passenger,
+        'booking': passenger.booking
+    }
+    return render(request, 'flights/confirm_cancel_booking.html', context)
+
+
 
 def search_results(request):
     search_params = request.session.get('search_params', {})

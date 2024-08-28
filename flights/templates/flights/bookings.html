@@ -1,45 +1,58 @@
 {% extends "layout.html" %}
 {% block content %}
-<h1>My Bookings</h1>
-{% if bookings %}
-<table class="table">
-    <thead>
-        <tr>
-            <th>Serial No.</th>
-            <th>Flight Route</th>
-            <th>Flight Date</th>
-            <th>Booking Date</th>
-            <th>Flight ID</th>
-            <th>Passenger ID(s)</th>
-            <th>Status</th>
-            <th>Actions</th>
 
-        </tr>
-    </thead>
-    <tbody>
-        {% for booking in bookings %}
-        <tr>
-            <td>{{ forloop.counter }}</td>
-            <td>{{ booking.flight.origin.city }} ({{ booking.flight.origin.code }}) - {{ booking.flight.destination.city }} ({{ booking.flight.destination.code }})</td>
-            <td>{{ booking.flight.departure_time|date:"d M Y H:i" }}</td>
-            <td>{{ booking.booking_date|date:"d M Y H:i" }}</td>
-            <td>{{ booking.flight.id }}</td>
-            <td>
-                {% for passenger in booking.passengers.all %}
-                {{ passenger.passenger_id }}<br>
-                {% endfor %}
-            </td>
-            <td>{{ booking.status }}</td>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>My Bookings</h2>
+    <a href="{% url 'cancel_booking' %}" class="btn btn-danger">Cancel a Booking</a>
+</div>
 
-            <td>
-                <a href="{% url 'booking_detail' booking.id %}" class="btn btn-primary btn-sm">View Details</a>
-
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-{% else %}
-<p>You have no bookings yet.</p>
+{% if messages %}
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+    {% endfor %}
 {% endif %}
+
+{% if bookings %}
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Serial No.</th>
+                <th>Flight Route</th>
+                <th>Flight Date</th>
+                <th>Booking Date</th>
+                <th>Flight ID</th>
+                <th>Passenger Details</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for booking in bookings %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ booking.flight.origin.city }} ({{ booking.flight.origin.code }}) - {{ booking.flight.destination.city }} ({{ booking.flight.destination.code }})</td>
+                    <td>{{ booking.flight.departure_time|date:"d M Y H:i" }}</td>
+                    <td>{{ booking.booking_date|date:"d M Y H:i" }}</td>
+                    <td>{{ booking.flight.id }}</td>
+                    <td>
+                        {% for passenger in booking.passengers.all %}
+                            ID: {{ passenger.passenger_id }}, Name: {{ passenger.first_name }} {{ passenger.last_name }}<br>
+                        {% endfor %}
+                    </td>
+                    <td>
+                        {% for passenger in booking.passengers.all %}
+                            {% if passenger.is_cancelled %}Cancelled{% else %}Confirmed{% endif %}<br>
+                        {% endfor %}
+                    </td>
+                    <td>
+                        <a href="{% url 'booking_detail' booking.id %}" class="btn btn-primary btn-sm">View Details</a>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% else %}
+    <p>You have no bookings yet.</p>
+{% endif %}
+
 {% endblock %}

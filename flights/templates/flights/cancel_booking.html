@@ -1,0 +1,38 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<h2>Cancel Booking</h2>
+
+<form method="post">
+    {% csrf_token %}
+    <div class="form-group">
+        <label for="passenger_id">Enter Passenger ID:</label>
+        <input type="text" class="form-control" id="passenger_id" name="passenger_id" required>
+    </div>
+    <button type="submit" class="btn btn-primary">Search</button>
+</form>
+
+{% if messages %}
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+{% endif %}
+
+{% if passenger %}
+    <h3>Passenger Details:</h3>
+    <p><strong>Name:</strong> {{ passenger.first_name }} {{ passenger.last_name }}</p>
+    <p><strong>Passenger ID:</strong> {{ passenger.passenger_id }}</p>
+    <p><strong>Flight:</strong> {{ passenger.booking.flight }}</p>
+    <p><strong>Flight Date:</strong> {{ passenger.booking.flight.departure_time|date:"d M Y H:i" }}</p>
+    <p><strong>Booking Date:</strong> {{ passenger.booking.booking_date|date:"d M Y H:i" }}</p>
+    <p><strong>Current Status:</strong> {% if passenger.is_cancelled %}Cancelled{% else %}Confirmed{% endif %}</p>
+
+    {% if not passenger.is_cancelled %}
+        <form method="post" action="{% url 'confirm_cancel_booking' passenger.passenger_id %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">Proceed to Cancel</button>
+        </form>
+    {% endif %}
+{% endif %}
+
+{% endblock %}
