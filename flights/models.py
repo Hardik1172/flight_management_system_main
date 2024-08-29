@@ -5,6 +5,22 @@ import random
 import string
 from django.utils import timezone
 import uuid
+from django.contrib.auth.models import AbstractUser
+from django.db import models
+from django.conf import settings
+
+
+
+class CustomUser(AbstractUser):
+    USER_TYPE_CHOICES = (
+        ('passenger', 'Passenger'),
+        ('admin', 'Admin'),
+    )
+    user_type = models.CharField(max_length=10, choices=USER_TYPE_CHOICES, default='passenger')
+
+    def __str__(self):
+        return self.username
+
 
 class Airport(models.Model):
     city = models.CharField(max_length=100)
@@ -84,7 +100,7 @@ class Booking(models.Model):
         ('economy', 'Economy'),
         ('business', 'Business'),
     )
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     flight = models.ForeignKey('Flight', on_delete=models.CASCADE)
     return_flight = models.ForeignKey('Flight', on_delete=models.SET_NULL, null=True, blank=True,
                                     related_name='return_bookings')
@@ -193,7 +209,7 @@ class Payment(models.Model):
         return f"Payment for Booking {self.booking.id}"
 
 class SearchHistory(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     origin = models.ForeignKey(Airport, on_delete=models.SET_NULL, null=True, related_name='search_origins')
     destination = models.ForeignKey(Airport, on_delete=models.SET_NULL, null=True, related_name='search_destinations')
     departure_date = models.DateField()

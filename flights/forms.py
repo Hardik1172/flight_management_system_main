@@ -10,6 +10,31 @@ from django.utils import timezone
 import datetime
 from django.core.validators import MinValueValidator
 from django.db import models
+from django import forms
+from django.contrib.auth.forms import UserCreationForm
+from .models import CustomUser
+from django import forms
+from django.contrib.auth.forms import UserCreationForm
+from .models import CustomUser, Flight, Booking, Passenger, Stopover
+from django import forms
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth import get_user_model
+from .models import Flight, Airport, Booking, Payment, Stopover, Passenger
+
+User = get_user_model()
+
+class CustomUserCreationForm(UserCreationForm):
+    user_type = forms.ChoiceField(choices=CustomUser.USER_TYPE_CHOICES, required=True, label='Register as')
+
+    class Meta(UserCreationForm.Meta):
+        model = CustomUser
+        fields = UserCreationForm.Meta.fields + ('email', 'user_type')
+
+class CustomAuthenticationForm(forms.Form):
+    username = forms.CharField(max_length=254)
+    password = forms.CharField(label="Password", widget=forms.PasswordInput)
+    user_type = forms.ChoiceField(choices=CustomUser.USER_TYPE_CHOICES, required=True, label='Login as')
+
 
 
 class DateInput(forms.DateInput):

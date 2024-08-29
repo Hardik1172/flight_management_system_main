@@ -23,26 +23,28 @@
 
             <h3>Stopovers</h3>
             {{ stopover_formset.management_form }}
-            {% for stopover_form in stopover_formset %}
-                <div class="stopover-form mb-3">
-                    <h4>Stopover {{ forloop.counter }}</h4>
-                    {% for field in stopover_form %}
-                        <div class="mb-2">
-                            <label class="form-label">{{ field.label }}</label>
-                            {{ field }}
-                            {% if field.errors %}
-                                {% for error in field.errors %}
-                                    <div class="invalid-feedback d-block">
-                                        {{ error }}
-                                    </div>
-                                {% endfor %}
-                            {% endif %}
-                        </div>
-                    {% endfor %}
-                </div>
-            {% endfor %}
-
-            <button type="submit" class="btn btn-primary">Add Flight</button>
+            <div id="stopover-forms">
+                {% for stopover_form in stopover_formset %}
+                    <div class="stopover-form mb-3">
+                        <h4>Stopover {{ forloop.counter }}</h4>
+                        {% for field in stopover_form %}
+                            <div class="mb-2">
+                                <label class="form-label">{{ field.label }}</label>
+                                {{ field }}
+                                {% if field.errors %}
+                                    {% for error in field.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ error }}
+                                        </div>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endfor %}
+            </div>
+            <button type="button" id="add-stopover" class="btn btn-secondary mt-2">Add Stopover</button>
+            <button type="submit" class="btn btn-primary mt-3">Add Flight</button>
         </form>
     </div>
 </div>
@@ -51,25 +53,20 @@
 {% block extra_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const addStopoverBtn = document.createElement('button');
-        addStopoverBtn.type = 'button';
-        addStopoverBtn.className = 'btn btn-secondary mt-2';
-        addStopoverBtn.textContent = 'Add Stopover';
-
-        const stopoverForms = document.querySelectorAll('.stopover-form');
-        const lastStopoverForm = stopoverForms[stopoverForms.length - 1];
-        lastStopoverForm.parentNode.insertBefore(addStopoverBtn, lastStopoverForm.nextSibling);
+        const addStopoverBtn = document.getElementById('add-stopover');
+        const stopoverForms = document.getElementById('stopover-forms');
+        const totalForms = document.getElementById('id_stopovers-TOTAL_FORMS');
 
         addStopoverBtn.addEventListener('click', function() {
-            const newForm = lastStopoverForm.cloneNode(true);
-            const formCount = document.getElementById('id_stopovers-TOTAL_FORMS');
-            const newIndex = parseInt(formCount.value);
+            const formCount = stopoverForms.children.length;
+            const newForm = stopoverForms.children[0].cloneNode(true);
+            const formRegex = RegExp(`stopovers-(\\d){1}-`,'g');
 
-            newForm.innerHTML = newForm.innerHTML.replace(/stopovers-\d+/g, `stopovers-${newIndex}`);
-            newForm.querySelector('h4').textContent = `Stopover ${newIndex + 1}`;
+            newForm.innerHTML = newForm.innerHTML.replace(formRegex, `stopovers-${formCount}-`);
+            newForm.querySelector('h4').textContent = `Stopover ${formCount + 1}`;
 
-            lastStopoverForm.parentNode.insertBefore(newForm, addStopoverBtn);
-            formCount.value = newIndex + 1;
+            stopoverForms.appendChild(newForm);
+            totalForms.value = formCount + 1;
         });
     });
 </script>

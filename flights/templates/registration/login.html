@@ -1,11 +1,42 @@
 {% extends "layout.html" %}
 
 {% block content %}
-<h2>Login</h2>
-<form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Login</button>
-</form>
-<p>Don't have an account? <a href="{% url 'register' %}">Register here</a></p>
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h1 class="card-title text-center mb-4">Login</h1>
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{% if message.tags %}{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+                <form method="post">
+                    {% csrf_token %}
+                    {% for field in form %}
+                        <div class="mb-3">
+                            {{ field.label_tag }}
+                            {{ field }}
+                            {% if field.errors %}
+                                {% for error in field.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ error }}
+                                    </div>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                    <button type="submit" class="btn btn-primary w-100">Login</button>
+                </form>
+                <hr>
+                <div class="text-center">
+                    <p>Don't have an account? <a href="{% url 'register' %}">Register here</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

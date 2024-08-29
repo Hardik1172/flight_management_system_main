@@ -69,6 +69,25 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect
 from django.contrib import messages
 from .models import Booking, Passenger
+from django.contrib.auth import login, authenticate, logout
+from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required, user_passes_test
+from .forms import CustomUserCreationForm
+from django.contrib.auth import login, authenticate, logout, get_user_model
+from .forms import CustomUserCreationForm
+from django.contrib.auth import login, authenticate
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required, user_passes_test
+from .forms import CustomUserCreationForm, CustomAuthenticationForm
+from .models import CustomUser
+from django.contrib.auth import login, authenticate
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required, user_passes_test
+from .forms import CustomUserCreationForm, CustomAuthenticationForm
+from .models import CustomUser
+from django.contrib.auth.views import LoginView
 
 logger = logging.getLogger(__name__)
 
@@ -369,48 +388,59 @@ def booking_confirmation(request, booking_id):
     passengers = booking.passengers.all()
     return render(request, 'flights/booking_confirmation.html', {'booking': booking, 'passengers': passengers})
 
+User = get_user_model()
+
 def register(request):
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
-            try:
-                user = form.save()
-                login(request, user)
-                messages.success(request, "Registration successful.")
-                return redirect("index")
-            except IntegrityError:
-                messages.error(request, "A user with that username already exists. Please choose a different username.")
-        else:
-            messages.error(request, "Registration failed. Please correct the errors below.")
-    else:
-        form = CustomUserCreationForm()
-    return render(request, "flights/register.html", {"form": form})
-
-def user_login(request):
-    if request.method == 'POST':
-        username = request.POST['username']
-        password = request.POST['password']
-        user = authenticate(request, username=username, password=password)
-        if user is not None:
+            user = form.save()
             login(request, user)
-            messages.success(request, "You have successfully logged in.")
+            messages.success(request, 'Registration successful. Welcome!')
             return redirect('index')
         else:
-            messages.error(request, "Invalid username or password.")
-    return render(request, 'flights/login.html')
+            messages.error(request, 'Registration failed. Please correct the errors.')
+    else:
+        form = CustomUserCreationForm()
+    return render(request, 'flights/register.html', {'form': form})
+
+class CustomLoginView(LoginView):
+    form_class = CustomAuthenticationForm
+    template_name = 'registration/login.html'
+
+    def form_valid(self, form):
+        username = form.cleaned_data.get('username')
+        password = form.cleaned_data.get('password')
+        user_type = form.cleaned_data.get('user_type')
+        user = authenticate(self.request, username=username, password=password)
+        if user is not None and user.user_type == user_type:
+            login(self.request, user)
+            messages.success(self.request, f'Welcome, {username}!')
+            return super().form_valid(form)
+        else:
+            messages.error(self.request, 'Invalid username, password, or user type.')
+            return self.form_invalid(form)
+
+def is_admin(user):
+    return user.is_authenticated and user.user_type == 'admin'
 
 
-
-
-@login_required
+@require_http_methods(["GET", "POST"])
 def user_logout(request):
     logout(request)
-    messages.success(request, "You have successfully logged out.")
     return redirect('index')
 
 
 
 @login_required
+@user_passes_test(is_admin)
+def admin_dashboard(request):
+    return render(request, 'flights/admin_dashboard.html')
+
+
+
+@login_required
+@user_passes_test(is_admin)
 def add_flight(request):
     if request.method == 'POST':
         form = FlightForm(request.POST)
