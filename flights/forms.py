@@ -20,6 +20,12 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import get_user_model
 from .models import Flight, Airport, Booking, Payment, Stopover, Passenger
+from django import forms
+from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
+from .models import CustomUser
+from django import forms
+from .models import Booking
+from django.forms import formset_factory
 
 User = get_user_model()
 
@@ -30,25 +36,35 @@ class CustomUserCreationForm(UserCreationForm):
         model = CustomUser
         fields = UserCreationForm.Meta.fields + ('email', 'user_type')
 
-class CustomAuthenticationForm(forms.Form):
-    username = forms.CharField(max_length=254)
-    password = forms.CharField(label="Password", widget=forms.PasswordInput)
+
+class CustomAuthenticationForm(AuthenticationForm):
     user_type = forms.ChoiceField(choices=CustomUser.USER_TYPE_CHOICES, required=True, label='Login as')
+
+    def clean(self):
+        cleaned_data = super().clean()
+        user_type = cleaned_data.get('user_type')
+        username = cleaned_data.get('username')
+
+        if username:
+            try:
+                user = CustomUser.objects.get(username=username)
+                if user.user_type != user_type:
+                    raise forms.ValidationError("Invalid user type for this account.")
+            except CustomUser.DoesNotExist:
+                pass  # User authentication will fail in the next step
+
+        return cleaned_data
+
+
+
+def clean():
+    destination = get_user_model()
 
 
 
 class DateInput(forms.DateInput):
     input_type = 'date'
 
-class PassengerForm(forms.ModelForm):
-    class Meta:
-        model = Passenger
-        fields = ['first_name', 'last_name', 'passenger_type', 'ticket_class', 'meal_choice']
-        widgets = {
-            'passenger_type': forms.HiddenInput(),
-            'ticket_class': forms.Select(attrs={'class': 'form-control'}),
-            'meal_choice': forms.Select(attrs={'class': 'form-control'}),
-        }
 class SearchForm(forms.Form):
     TRIP_CHOICES = (
         ('one_way', 'One Way'),
@@ -101,7 +117,7 @@ class PaymentForm(forms.ModelForm):
         widgets = {
             'card_number': forms.TextInput(attrs={'class': 'form-control'}),
             'cvv': forms.TextInput(attrs={'class': 'form-control'}),
-            'expiry_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'expiry_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date', 'min': timezone.now().date().isoformat()}),
         }
 
     def clean_expiry_date(self):
@@ -109,25 +125,6 @@ class PaymentForm(forms.ModelForm):
         if expiry_date < timezone.now().date():
             raise forms.ValidationError("Expiry date cannot be in the past.")
         return expiry_date
-
-
-class CustomUserCreationForm(UserCreationForm):
-    email = forms.EmailField(required=True)
-
-
-    class Meta:
-        model = User
-        fields = ("username", "email", "password1", "password2")
-
-    def save(self, commit=True):
-        user = super().save(commit=False)
-        user.email = self.cleaned_data["email"]
-        if commit:
-            user.save()
-        return user
-
-
-
 
 class FlightForm(forms.ModelForm):
     origin = forms.ModelChoiceField(
@@ -206,15 +203,39 @@ StopoverInlineFormSet = forms.inlineformset_factory(
     }
 )
 
+
 class BookingForm(forms.ModelForm):
     class Meta:
         model = Booking
-        fields = ['ticket_class']
-        widgets = {
-            'ticket_class': forms.Select(attrs={'class': 'form-control'}),
-        }
+        fields = []
 
 
+class PassengerForm(forms.ModelForm):
+    class Meta:
+        model = Passenger
+        fields = ['first_name', 'last_name', 'passenger_type', 'meal_choice', 'ticket_class']
+
+class BookingWithPassengersForm(forms.Form):
+    def __init__(self, *args, **kwargs):
+        extra = kwargs.pop('extra', 0)
+        super(BookingWithPassengersForm, self).__init__(*args, **kwargs)
+        self.passenger_forms = []
+        for i in range(extra):
+            form_prefix = f'passenger_{i}'
+            self.passenger_forms.append(PassengerForm(prefix=form_prefix, *args, **kwargs))
+
+    def is_valid(self):
+        valid = super().is_valid()
+        for form in self.passenger_forms:
+            valid = valid and form.is_valid()
+        return valid
+
+    def clean(self):
+        cleaned_data = super().clean()
+        for form in self.passenger_forms:
+            if form.is_valid():
+                cleaned_data.update(form.cleaned_data)
+        return cleaned_data
 
 
 

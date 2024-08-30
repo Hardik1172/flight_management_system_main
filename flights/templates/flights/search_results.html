@@ -2,30 +2,35 @@
 {% load static %}
 
 {% block content %}
-<div class="container">
-    <h1 class="mb-4">Search Results</h1>
-
+<div class="container mt-4">
+    <h2>Search Results</h2>
     {% if outbound_flights %}
-        <h2>Outbound Flights</h2>
-        <div class="list-group">
+        <h3>Outbound Flights</h3>
+        <div class="row">
             {% for flight in outbound_flights %}
-                <div class="list-group-item">
-                    <h5 class="mb-1">Flight {{ flight.flight_number }}</h5>
-                    <p class="mb-1">From: {{ flight.origin.city }} ({{ flight.origin.code }}) To: {{ flight.destination.city }} ({{ flight.destination.code }})</p>
-                    <p class="mb-1">Departure: {{ flight.departure_time|date:"D H:i" }} Arrival: {{ flight.arrival_time|date:"D H:i" }}</p>
-                    <p class="mb-1">Economy Price: ₹{{ flight.economy_price }}</p>
-                    <p class="mb-1">Business Price: ₹{{ flight.business_price }}</p>
-                    <p class="mb-1">Duration: {{flight.duration}}</p>
-                    <p class="mb-1">Available Seats: {{ flight.available_seats }}</p>
-                    {% if flight.stopovers.count > 0 %}
-                        <p class="mb-1">Stops: {{ flight.stopovers.count }}</p>
-                    {% else %}
-                        <p class="mb-1">Direct Flight</p>
-                    {% endif %}
-                    <a href="{% url 'flight_detail' flight.id %}" class="btn btn-info btn-sm">View Details</a>
-                    {% if trip_type == 'one_way' %}
-                        <a href="{% url 'book' flight.id %}" class="btn btn-primary btn-sm">Book Now</a>
-                    {% endif %}
+                <div class="col-md-6 mb-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Flight {{ flight.flight_number }}</h5>
+                            <p>From: {{ flight.origin.city }} ({{ flight.origin.code }}) To: {{ flight.destination.city }} ({{ flight.destination.code }})</p>
+                            <p>Departure: {{ flight.departure_time|date:"D H:i" }} Arrival: {{ flight.arrival_time|date:"D H:i" }}</p>
+                            <p>Economy Price: ₹{{ flight.economy_price }}</p>
+                            <p>Business Price: ₹{{ flight.business_price }}</p>
+                            <p>Duration: {{flight.duration}}</p>
+                            <p>Available Seats: {{ flight.available_seats }}</p>
+                            {% if flight.stopovers.count > 0 %}
+                                <p>Stops: {{ flight.stopovers.count }}</p>
+                            {% else %}
+                                <p>Direct Flight</p>
+                            {% endif %}
+                            <a href="{% url 'flight_detail' flight.id %}" class="btn btn-info">View Details</a>
+                            {% if trip_type == 'one_way' and not is_admin %}
+                                <a href="{% url 'book' flight.id %}" class="btn btn-primary">Book Now</a>
+                            {% elif is_admin %}
+                                <button class="btn btn-secondary" disabled>Admin View</button>
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
             {% endfor %}
         </div>
@@ -35,32 +40,38 @@
 
     {% if trip_type == 'round_trip' %}
         {% if return_flights %}
-            <h2 class="mt-4">Return Flights</h2>
-            <div class="list-group">
+            <h3>Return Flights</h3>
+            <div class="row">
                 {% for return_flight in return_flights %}
-                    <div class="list-group-item">
-                        <h5 class="mb-1">Flight {{ return_flight.flight_number }}</h5>
-                        <p class="mb-1">From: {{ return_flight.origin.city }} ({{ return_flight.origin.code }}) To: {{ return_flight.destination.city }} ({{ return_flight.destination.code }})</p>
-                        <p class="mb-1">Departure: {{ return_flight.departure_time|date:"D H:i" }} Arrival: {{ return_flight.arrival_time|date:"D H:i" }}</p>
-                        <p class="mb-1">Economy Price: ₹{{ return_flight.economy_price }}</p>
-                        <p class="mb-1">Business Price: ₹{{ return_flight.business_price }}</p>
-                        <p class="mb-1">Available Seats: {{ return_flight.available_seats }}</p>
-                        {% if return_flight.stopovers.count > 0 %}
-                            <p class="mb-1">Stops: {{ return_flight.stopovers.count }}</p>
-                        {% else %}
-                            <p class="mb-1">Direct Flight</p>
-                        {% endif %}
-                        <a href="{% url 'flight_detail' return_flight.id %}" class="btn btn-info btn-sm">View Details</a>
+                    <div class="col-md-6 mb-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">Flight {{ return_flight.flight_number }}</h5>
+                                <p>From: {{ return_flight.origin.city }} ({{ return_flight.origin.code }}) To: {{ return_flight.destination.city }} ({{ return_flight.destination.code }})</p>
+                                <p>Departure: {{ return_flight.departure_time|date:"D H:i" }} Arrival: {{ return_flight.arrival_time|date:"D H:i" }}</p>
+                                <p>Economy Price: ₹{{ return_flight.economy_price }}</p>
+                                <p>Business Price: ₹{{ return_flight.business_price }}</p>
+                                <p>Available Seats: {{ return_flight.available_seats }}</p>
+                                {% if return_flight.stopovers.count > 0 %}
+                                    <p>Stops: {{ return_flight.stopovers.count }}</p>
+                                {% else %}
+                                    <p>Direct Flight</p>
+                                {% endif %}
+                                <a href="{% url 'flight_detail' return_flight.id %}" class="btn btn-info">View Details</a>
+                            </div>
+                        </div>
                     </div>
                 {% endfor %}
             </div>
-            {% for outbound_flight in outbound_flights %}
-                {% for return_flight in return_flights %}
-                    <a href="{% url 'book' outbound_flight.id return_flight.id %}" class="btn btn-primary mt-3">Book Round Trip</a>
+            {% if not is_admin %}
+                {% for outbound_flight in outbound_flights %}
+                    {% for return_flight in return_flights %}
+                        <a href="{% url 'book' outbound_flight.id return_flight.id %}" class="btn btn-primary">Book Round Trip</a>
+                    {% endfor %}
                 {% endfor %}
-            {% endfor %}
+            {% endif %}
         {% else %}
-            <p class="mt-4">No return flights found for the selected date.</p>
+            <p>No return flights found for the selected date.</p>
         {% endif %}
     {% endif %}
 </div>

@@ -9,3 +9,12 @@ def add_class(field, css_class):
 @register.filter
 def active_passenger_count(booking):
     return booking.passengers.filter(is_cancelled=False).count()
+
+
+@register.filter
+def times(number):
+    return range(number)
+
+@register.filter
+def startswith(text, starts):
+    return text.startswith(starts)

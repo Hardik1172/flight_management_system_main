@@ -1,8 +1,6 @@
 {% extends "layout.html" %}
 {% block content %}
-
 <h2>Confirm Cancellation</h2>
-
 <p>Are you sure you want to cancel the booking for:</p>
 <p><strong>Passenger:</strong> {{ passenger.first_name }} {{ passenger.last_name }}</p>
 <p><strong>Passenger ID:</strong> {{ passenger.passenger_id }}</p>
@@ -11,10 +9,9 @@
 <p><strong>Booking Date:</strong> {{ booking.booking_date|date:"d M Y H:i" }}</p>
 <p><strong>Current Status:</strong> {% if passenger.is_cancelled %}Cancelled{% else %}Confirmed{% endif %}</p>
 
-<form method="post">
+<form method="post" action="{% url 'confirm_cancel_booking' passenger.passenger_id %}">
     {% csrf_token %}
     <button type="submit" class="btn btn-danger">Confirm Cancellation</button>
     <a href="{% url 'bookings' %}" class="btn btn-secondary">Back to Bookings</a>
 </form>
-
 {% endblock %}

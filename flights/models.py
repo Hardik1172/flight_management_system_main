@@ -10,7 +10,6 @@ from django.db import models
 from django.conf import settings
 
 
-
 class CustomUser(AbstractUser):
     USER_TYPE_CHOICES = (
         ('passenger', 'Passenger'),
@@ -19,8 +18,7 @@ class CustomUser(AbstractUser):
     user_type = models.CharField(max_length=10, choices=USER_TYPE_CHOICES, default='passenger')
 
     def __str__(self):
-        return self.username
-
+        return f"{self.username} ({self.get_user_type_display()})"
 
 class Airport(models.Model):
     city = models.CharField(max_length=100)
@@ -42,7 +40,6 @@ class Flight(models.Model):
     business_seats = models.IntegerField(default=50)
     available_economy_seats = models.IntegerField(default=150)
     available_business_seats = models.IntegerField(default=50)
-
     is_international = models.BooleanField(default=False)
     day_of_week = models.IntegerField(choices=[
         (0, 'Monday'),
@@ -54,16 +51,14 @@ class Flight(models.Model):
         (6, 'Sunday'),
     ])
 
-
-
     def update_available_seats(self):
         booked_economy = self.booking_set.filter(status='Confirmed', ticket_class='economy').aggregate(
             total=models.Sum('adults') + models.Sum('children') + models.Sum('infants'))['total'] or 0
         booked_business = self.booking_set.filter(status='Confirmed', ticket_class='business').aggregate(
             total=models.Sum('adults') + models.Sum('children') + models.Sum('infants'))['total'] or 0
 
-        self.available_economy_seats = self.economy_seats - booked_economy
-        self.available_business_seats = self.business_seats - booked_business
+        self.available_economy_seats = max(0, min(self.economy_seats - booked_economy, self.economy_seats))
+        self.available_business_seats = max(0, min(self.business_seats - booked_business, self.business_seats))
         self.save()
 
     def has_available_seats(self, ticket_class, num_passengers):
@@ -86,6 +81,8 @@ class Flight(models.Model):
     def __str__(self):
         return f"{self.flight_number}: {self.origin} to {self.destination}"
 
+
+
 class Stopover(models.Model):
     flight = models.ForeignKey(Flight, on_delete=models.CASCADE, related_name='stopovers')
     airport = models.ForeignKey(Airport, on_delete=models.CASCADE)
@@ -100,6 +97,7 @@ class Booking(models.Model):
         ('economy', 'Economy'),
         ('business', 'Business'),
     )
+
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     flight = models.ForeignKey('Flight', on_delete=models.CASCADE)
     return_flight = models.ForeignKey('Flight', on_delete=models.SET_NULL, null=True, blank=True,
@@ -115,6 +113,10 @@ class Booking(models.Model):
         ('Partially Cancelled', 'Partially Cancelled'),
     )
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Confirmed')
+
+
+    def has_active_passengers(self):
+        return self.passengers.filter(is_cancelled=False).exists()
 
     def update_status(self):
         cancelled_passengers = self.passengers.filter(is_cancelled=True).count()
@@ -156,15 +158,16 @@ class Passenger(models.Model):
         ('business', 'Business'),
     )
 
-    booking = models.ForeignKey('Booking', on_delete=models.CASCADE, related_name='passengers')
-    first_name = models.CharField(max_length=100)
-    last_name = models.CharField(max_length=100)
+    booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name='passengers')
+    passenger_id = models.CharField(max_length=7, unique=True, blank=True)
+    first_name = models.CharField(max_length=50)
+    last_name = models.CharField(max_length=50)
     passenger_type = models.CharField(max_length=10, choices=PASSENGER_TYPES)
     is_cancelled = models.BooleanField(default=False)
     meal_choice = models.CharField(max_length=20, choices=MEAL_CHOICES, default='vegetarian')
-    seat_number = models.CharField(max_length=5, null=True, blank=True)
-    passenger_id = models.CharField(max_length=7, unique=True)
+    seat_number = models.CharField(max_length=5, blank=True)
     ticket_class = models.CharField(max_length=10, choices=TICKET_CLASSES, default='economy')
+
 
     def save(self, *args, **kwargs):
         if not self.passenger_id:

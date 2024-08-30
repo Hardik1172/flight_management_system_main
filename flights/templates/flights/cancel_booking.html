@@ -1,8 +1,6 @@
 {% extends "layout.html" %}
 {% block content %}
-
 <h2>Cancel Booking</h2>
-
 <form method="post">
     {% csrf_token %}
     <div class="form-group">
@@ -34,5 +32,4 @@
         </form>
     {% endif %}
 {% endif %}
-
 {% endblock %}

@@ -1,0 +1,21 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<h2>Cancel Booking</h2>
+
+<form method="post">
+    {% csrf_token %}
+    <div class="form-group">
+        <label for="passenger_id">Enter Passenger ID:</label>
+        <input type="text" class="form-control" id="passenger_id" name="passenger_id" required>
+    </div>
+    <button type="submit" class="btn btn-primary">Search</button>
+</form>
+
+{% if messages %}
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+{% endif %}
+
+{% endblock %}

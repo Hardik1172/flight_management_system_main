@@ -3,144 +3,104 @@
 {% block content %}
 <h1>Booking Details</h1>
 
-<table class="table table-bordered">
-    <thead>
-        <tr>
-            <th colspan="2">Flight Details</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <th>Flight ID</th>
-            <td>{{ booking.flight.id }}</td>
-        </tr>
-        <tr>
-            <th>Flight Number</th>
-            <td>{{ booking.flight.flight_number }}</td>
-        </tr>
-        <tr>
-            <th>From</th>
-            <td>{{ booking.flight.origin.city }} ({{ booking.flight.origin.code }})</td>
-        </tr>
-        <tr>
-            <th>To</th>
-            <td>{{ booking.flight.destination.city }} ({{ booking.flight.destination.code }})</td>
-        </tr>
-        <tr>
-            <th>Departure</th>
-            <td>{{ booking.flight.departure_time|date:"d M Y H:i" }}</td>
-        </tr>
-        <tr>
-            <th>Arrival</th>
-            <td>{{ booking.flight.arrival_time|date:"d M Y H:i" }}</td>
-        </tr>
-        <tr>
-            <th>Duration</th>
-            <td>{{ booking.flight.duration }}</td>
-        </tr>
-    </tbody>
-</table>
+<div class="card mb-4">
+    <div class="card-header">
+        <h2>Flight Details</h2>
+    </div>
+    <div class="card-body">
+        <table class="table">
+            <tr>
+                <th>Flight Number:</th>
+                <td>{{ booking.flight.flight_number }}</td>
+            </tr>
+            <tr>
+                <th>From:</th>
+                <td>{{ booking.flight.origin.city }} ({{ booking.flight.origin.code }})</td>
+            </tr>
+            <tr>
+                <th>To:</th>
+                <td>{{ booking.flight.destination.city }} ({{ booking.flight.destination.code }})</td>
+            </tr>
+            <tr>
+                <th>Departure:</th>
+                <td>{{ booking.flight.departure_time|date:"F d, Y H:i" }}</td>
+            </tr>
+            <tr>
+                <th>Arrival:</th>
+                <td>{{ booking.flight.arrival_time|date:"F d, Y H:i" }}</td>
+            </tr>
+            <tr>
+                <th>Duration:</th>
+                <td>{{ booking.flight.duration }}</td>
+            </tr>
+        </table>
+    </div>
+</div>
 
-<table class="table table-bordered mt-4">
-    <thead>
-        <tr>
-            <th colspan="2">Booking Information</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <th>Booking Date</th>
-            <td>{{ booking.booking_date|date:"d M Y H:i" }}</td>
-        </tr>
-        <tr>
-            <th>Status</th>
-            <td>{{ booking.status }}</td>
-        </tr>
-        <tr>
-            <th>Ticket Class</th>
-            <td>{{ booking.get_ticket_class_display }}</td>
-        </tr>
-    </tbody>
-</table>
+<div class="card mb-4">
+    <div class="card-header">
+        <h2>Booking Information</h2>
+    </div>
+    <div class="card-body">
+        <table class="table">
+            <tr>
+                <th>Booking Date:</th>
+                <td>{{ booking.booking_date|date:"F d, Y H:i" }}</td>
+            </tr>
+            <tr>
+                <th>Status:</th>
+                <td>{{ booking.status }}</td>
+            </tr>
+        </table>
+    </div>
+</div>
 
-<table class="table table-bordered mt-4">
-    <thead>
-        <tr>
-            <th colspan="7">Passenger Information</th>
-        </tr>
-        <tr>
-            <th>Passenger ID</th>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Seat Number</th>
-            <th>Meal Choice</th>
-            <th>Ticket Class</th>
-            <th>Status</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for passenger in booking.passengers.all %}
-        <tr>
-            <td>{{ passenger.passenger_id }}</td>
-            <td>{{ passenger.first_name }} {{ passenger.last_name }}</td>
-            <td>{{ passenger.get_passenger_type_display }}</td>
-            <td>{{ passenger.seat_number|default:"Not assigned" }}</td>
-            <td>{{ passenger.get_meal_choice_display }}</td>
-            <td>{{ passenger.get_ticket_class_display }}</td>
-            <td>
-                {% if passenger.is_cancelled %}
-                    Cancelled
-                {% else %}
-                    Confirmed
-                {% endif %}
-            </td>
-        </tr>
-        {% empty %}
-        <tr>
-            <td colspan="7">No passenger information available.</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-
-{% if booking.return_flight %}
-<table class="table table-bordered mt-4">
-    <thead>
-        <tr>
-            <th colspan="2">Return Flight Details</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <th>Flight ID</th>
-            <td>{{ booking.return_flight.id }}</td>
-        </tr>
-        <tr>
-            <th>Flight Number</th>
-            <td>{{ booking.return_flight.flight_number }}</td>
-        </tr>
-        <tr>
-            <th>From</th>
-            <td>{{ booking.return_flight.origin.city }} ({{ booking.return_flight.origin.code }})</td>
-        </tr>
-        <tr>
-            <th>To</th>
-            <td>{{ booking.return_flight.destination.city }} ({{ booking.return_flight.destination.code }})</td>
-        </tr>
-        <tr>
-            <th>Departure</th>
-            <td>{{ booking.return_flight.departure_time|date:"d M Y H:i" }}</td>
-        </tr>
-        <tr>
-            <th>Arrival</th>
-            <td>{{ booking.return_flight.arrival_time|date:"d M Y H:i" }}</td>
-        </tr>
-        <tr>
-            <th>Duration</th>
-            <td>{{ booking.return_flight.duration }}</td>
-        </tr>
-    </tbody>
-</table>
-{% endif %}
-
+<div class="card mb-4">
+    <div class="card-header">
+        <h2>Passenger Information</h2>
+    </div>
+    <div class="card-body">
+        {% if passengers %}
+            {% for passenger in passengers %}
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">Passenger {{ forloop.counter }}</h5>
+                        <table class="table">
+                            <tr>
+                                <th>Passenger ID:</th>
+                                <td>{{ passenger.passenger_id }}</td>
+                            </tr>
+                            <tr>
+                                <th>Name:</th>
+                                <td>{{ passenger.first_name }} {{ passenger.last_name }}</td>
+                            </tr>
+                            <tr>
+                                <th>Type:</th>
+                                <td>{{ passenger.get_passenger_type_display }}</td>
+                            </tr>
+                            <tr>
+                                <th>Seat Number:</th>
+                                <td>{{ passenger.seat_number|default:"Not assigned" }}</td>
+                            </tr>
+                            <tr>
+                                <th>Meal Choice:</th>
+                                <td>{{ passenger.get_meal_choice_display }}</td>
+                            </tr>
+                            <tr>
+                                <th>Ticket Class:</th>
+                                <td>{{ passenger.get_ticket_class_display }}</td>
+                            </tr>
+                            <tr>
+                                <th>Status:</th>
+                                <td>{% if passenger.is_cancelled %}Cancelled{% else %}Confirmed{% endif %}</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p>No passenger information available.</p>
+        {% endif %}
+    </div>
+</div>
 {% endblock %}

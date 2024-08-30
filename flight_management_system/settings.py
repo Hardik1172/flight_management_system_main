@@ -114,6 +114,5 @@ LOGGING = {
         'level': 'INFO',
     },
 }
-
 # URL settings
 APPEND_SLASH = True

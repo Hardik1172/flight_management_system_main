@@ -1,7 +1,7 @@
 from django.urls import path
 from . import views
 from django.contrib.auth import views as auth_views
-from .views import CustomLoginView
+
 
 urlpatterns = [
     path('', views.index, name='index'),
@@ -13,7 +13,7 @@ urlpatterns = [
     path('bookings/', views.bookings, name='bookings'),
     path('contact/', views.contact, name='contact'),
     path('register/', views.register, name='register'),
-    path('login/', CustomLoginView.as_view(), name='login'),
+    path('login/', views.login_view, name='login'),
     path('logout/', views.user_logout, name='logout'),
     path('payment/<int:booking_id>/', views.payment, name='payment'),
     path('privacy/', views.privacy_policy, name='privacy_policy'),
@@ -28,3 +28,4 @@ urlpatterns = [
     path('cancel_booking/', views.cancel_booking, name='cancel_booking'),
     path('confirm_cancel_booking/<str:passenger_id>/', views.confirm_cancel_booking, name='confirm_cancel_booking'),
 ]
+

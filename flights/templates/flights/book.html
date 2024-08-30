@@ -12,6 +12,8 @@
         <p><strong>Departure:</strong> {{ flight.departure_time|date:"F d, Y H:i" }}</p>
         <p><strong>Arrival:</strong> {{ flight.arrival_time|date:"F d, Y H:i" }}</p>
         <p><strong>Duration:</strong> {{ flight.duration }}</p>
+        <p><strong>Available Economy Seats:</strong> {{ flight.available_economy_seats }}</p>
+        <p><strong>Available Business Seats:</strong> {{ flight.available_business_seats }}</p>
     </div>
 </div>
 
@@ -24,28 +26,35 @@
         <p><strong>Departure:</strong> {{ return_flight.departure_time|date:"F d, Y H:i" }}</p>
         <p><strong>Arrival:</strong> {{ return_flight.arrival_time|date:"F d, Y H:i" }}</p>
         <p><strong>Duration:</strong> {{ return_flight.duration }}</p>
+        <p><strong>Available Economy Seats:</strong> {{ return_flight.available_economy_seats }}</p>
+        <p><strong>Available Business Seats:</strong> {{ return_flight.available_business_seats }}</p>
     </div>
 </div>
 {% endif %}
 
+
+
 <form id="bookingForm" method="post" class="needs-validation" novalidate>
     {% csrf_token %}
-    {{ booking_form.as_p }}
+    {{ form.non_field_errors }}
 
     <div id="passengerForms">
         <h3>Passenger Information</h3>
 
-        <div id="adultForms">
-            <h4>Adults <span id="adultCount">0</span>/{{ adults }} <button type="button" class="btn btn-sm btn-primary add-passenger" data-passenger-type="adult" data-max="{{ adults }}">+</button></h4>
-        </div>
-
-        <div id="childForms">
-            <h4>Children <span id="childCount">0</span>/{{ children }} <button type="button" class="btn btn-sm btn-primary add-passenger" data-passenger-type="child" data-max="{{ children }}">+</button></h4>
-        </div>
-
-        <div id="infantForms">
-            <h4>Infants <span id="infantCount">0</span>/{{ infants }} <button type="button" class="btn btn-sm btn-primary add-passenger" data-passenger-type="infant" data-max="{{ infants }}">+</button></h4>
-        </div>
+        {% for passenger_form in form.passenger_forms %}
+            <div class="card mb-3 passenger-form">
+                <div class="card-body">
+                    <h5 class="card-title">Passenger {{ forloop.counter }}</h5>
+                    {% for field in passenger_form %}
+                        <div class="form-group">
+                            {{ field.label_tag }}
+                            {{ field }}
+                            {{ field.errors }}
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endfor %}
     </div>
 
     <div class="card mt-4 mb-4">
@@ -67,42 +76,6 @@
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const form = document.getElementById('bookingForm');
-        const addPassengerButtons = document.querySelectorAll('.add-passenger');
-        const passengerFormTemplate = `
-            <div class="card mb-3 passenger-form">
-                <div class="card-body">
-                    <h5 class="card-title">__PASSENGER_TYPE__ Passenger</h5>
-                    <input type="hidden" name="passenger-__PREFIX__-passenger_type" value="__PASSENGER_TYPE__">
-                    <div class="form-group">
-                        <label for="passenger-__PREFIX__-first_name">First Name:</label>
-                        <input type="text" name="passenger-__PREFIX__-first_name" class="form-control" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="passenger-__PREFIX__-last_name">Last Name:</label>
-                        <input type="text" name="passenger-__PREFIX__-last_name" class="form-control" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="passenger-__PREFIX__-ticket_class">Ticket Class:</label>
-                        <select name="passenger-__PREFIX__-ticket_class" class="form-control" required>
-                            <option value="economy">Economy</option>
-                            <option value="business">Business</option>
-                            <option value="first">First Class</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="passenger-__PREFIX__-meal_choice">Meal Choice:</label>
-                        <select name="passenger-__PREFIX__-meal_choice" class="form-control" required>
-                            <option value="standard">Standard</option>
-                            <option value="vegetarian">Vegetarian</option>
-                            <option value="kosher">Kosher</option>
-                            <option value="halal">Halal</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        let passengerCount = 0;
 
         form.addEventListener('submit', function(event) {
             if (!form.checkValidity()) {
@@ -111,37 +84,6 @@
             }
             form.classList.add('was-validated');
         }, false);
-
-        addPassengerButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                const passengerType = this.dataset.passengerType;
-                const max = parseInt(this.dataset.max);
-                const currentCount = document.querySelectorAll(`#${passengerType}Forms .passenger-form`).length;
-
-                if (currentCount < max) {
-                    let newForm = passengerFormTemplate
-                        .replace(/__PASSENGER_TYPE__/g, passengerType)
-                        .replace(/__PREFIX__/g, passengerCount);
-
-                    document.querySelector(`#${passengerType}Forms`).insertAdjacentHTML('beforeend', newForm);
-
-                    document.querySelector(`#${passengerType}Count`).textContent = currentCount + 1;
-                    passengerCount++;
-
-                    if (currentCount + 1 >= max) {
-                        this.disabled = true;
-                    }
-                }
-            });
-        });
-
-        // Trigger the add passenger buttons to create initial forms
-        addPassengerButtons.forEach(button => {
-            const max = parseInt(button.dataset.max);
-            for (let i = 0; i < max; i++) {
-                button.click();
-            }
-        });
     });
 </script>
 {% endblock %}
