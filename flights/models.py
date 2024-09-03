@@ -4,7 +4,6 @@ from decimal import Decimal
 import random
 import string
 from django.utils import timezone
-import uuid
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.conf import settings
@@ -32,6 +31,7 @@ class Flight(models.Model):
     flight_number = models.CharField(max_length=10)
     origin = models.ForeignKey(Airport, on_delete=models.CASCADE, related_name='departures')
     destination = models.ForeignKey(Airport, on_delete=models.CASCADE, related_name='arrivals')
+
     departure_time = models.DateTimeField()
     arrival_time = models.DateTimeField()
     economy_price = models.DecimalField(max_digits=10, decimal_places=2)
@@ -130,6 +130,9 @@ class Booking(models.Model):
             self.status = 'Confirmed'
         self.save()
 
+
+
+
     def total_price(self):
         base_price = self.flight.business_price if self.ticket_class == 'business' else self.flight.economy_price
         total = base_price * (self.adults + self.children * Decimal('0.7') + self.infants * Decimal('0.5'))
@@ -200,10 +203,12 @@ class Passenger(models.Model):
         self.save()
         self.booking.update_status()
 
+
+
 class Payment(models.Model):
     booking = models.OneToOneField(Booking, on_delete=models.CASCADE)
-    card_number = models.CharField(max_length=16)
-    cvv = models.CharField(max_length=3)
+    card_number = models.CharField( max_length=16)
+    cvv = models.CharField( max_length=3)
     expiry_date = models.DateField()
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     timestamp = models.DateTimeField(auto_now_add=True)

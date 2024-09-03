@@ -114,5 +114,13 @@ LOGGING = {
         'level': 'INFO',
     },
 }
+
+# Kafka Configuration
+KAFKA_BOOTSTRAP_SERVERS = ['localhost:29092']  # Replace with your Kafka broker address
+KAFKA_FLIGHT_UPDATES_TOPIC = 'flight_updates'
+KAFKA_BOOKING_NOTIFICATIONS_TOPIC = 'booking_notifications'
+KAFKA_PAYMENT_EVENTS_TOPIC = 'payment_events'
+KAFKA_SEARCH_ANALYTICS_TOPIC = 'search_analytics'
+KAFKA_USER_ACTIVITY_TOPIC = 'user_activity'
 # URL settings
 APPEND_SLASH = True

@@ -25,6 +25,7 @@
                             {% endif %}
                             <a href="{% url 'flight_detail' flight.id %}" class="btn btn-info">View Details</a>
                             {% if trip_type == 'one_way' and not is_admin %}
+
                                 <a href="{% url 'book' flight.id %}" class="btn btn-primary">Book Now</a>
                             {% elif is_admin %}
                                 <button class="btn btn-secondary" disabled>Admin View</button>

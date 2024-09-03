@@ -1,111 +1,27 @@
 # flights/views.py
 
-from .forms import SearchForm, BookingForm, PaymentForm
-from django.contrib.auth import login, authenticate, logout
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
-from django.views.decorators.http import require_http_methods
-from django.db.models import Q
-from datetime import datetime
-import logging
-from .models import Flight, Airport, Booking
-from .forms import SearchForm, BookingForm, CustomUserCreationForm
-from django.utils import timezone
 from django.contrib import messages
-from django.shortcuts import render, redirect
-from .forms import FlightForm
-from datetime import timedelta
-from django.shortcuts import render
-from .forms import SearchForm
-from .models import Flight
-from django.contrib import messages
-from datetime import timedelta
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages
-from django.db.models import Q
-from datetime import datetime, timedelta
-from .models import Flight, Airport, Booking, Stopover
-from .forms import SearchForm, BookingForm, FlightForm, PaymentForm, CustomUserCreationForm, StopoverInlineFormSet , PassengerForm
-from django.contrib.auth import login, authenticate, logout
-from django.forms import formset_factory
-
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages
-from .models import Flight, Booking, Passenger
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages
-from django.contrib.auth import login, authenticate, logout
-from django.db.models import Q
-from datetime import datetime, timedelta
-import logging
-from .models import Flight, Airport, Booking, Stopover, Passenger
-from .forms import SearchForm, BookingForm, FlightForm, PaymentForm, CustomUserCreationForm, StopoverInlineFormSet, PassengerForm
-import random
-from django.shortcuts import render, redirect
-from .models import SearchHistory
-from .forms import SearchForm
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages
-from .models import Booking, Payment, Passenger
-from .forms import PaymentForm
-from django.utils import timezone
-from django.urls import reverse
-from django.db.utils import IntegrityError
-from django.core.serializers import serialize
-from django.http import JsonResponse
-from .models import Airport
-from  django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages
-from .models import Booking, Passenger
-from django.http import HttpResponseRedirect
-from django.urls import reverse
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import get_object_or_404, redirect
-from django.contrib import messages
-from .models import Booking, Passenger
-from django.contrib.auth import login, authenticate, logout
-from django.shortcuts import render, redirect
-from django.contrib.auth.decorators import login_required, user_passes_test
-from .forms import CustomUserCreationForm
-from django.contrib.auth import login, authenticate, logout, get_user_model
-from .forms import CustomUserCreationForm
 from django.contrib.auth import login, authenticate
-from django.shortcuts import render, redirect
-from django.contrib import messages
-from django.contrib.auth.decorators import login_required, user_passes_test
-from .forms import CustomUserCreationForm, CustomAuthenticationForm
-from .models import CustomUser
-from django.contrib.auth import login, authenticate
-from django.shortcuts import render, redirect
-from django.contrib import messages
-from django.contrib.auth.decorators import login_required, user_passes_test
-from .forms import CustomUserCreationForm, CustomAuthenticationForm
-from .models import CustomUser
-from django.contrib.auth.views import LoginView
+from django.contrib.auth import logout, get_user_model
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib import messages
-from .models import Flight, Booking
-from .forms import BookingForm, PassengerForm
-from django.forms import formset_factory
-import logging
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages
-from .models import Flight, Booking, Passenger
-from .forms import BookingWithPassengersForm
-import logging
+from django.contrib.auth.decorators import user_passes_test
 from django.db.models import Prefetch
-from django.db.models import Prefetch, Exists, OuterRef
-from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
+from django.shortcuts import redirect, get_object_or_404
 from django.shortcuts import render
+
+import logging
+import random
+from datetime import datetime
+from .forms import BookingWithPassengersForm
+from .forms import CustomUserCreationForm, CustomAuthenticationForm
+from .forms import FlightForm, StopoverInlineFormSet
+from .forms import PaymentForm
+from .forms import SearchForm
+from .models import Airport
 from .models import Booking, Passenger
+from .models import Flight
+from .models import SearchHistory
 
 logger = logging.getLogger(__name__)
 
@@ -160,6 +76,10 @@ def search(request):
                 'trip_type': form.cleaned_data['trip_type']
             }
 
+
+
+
+
             return redirect('search_results')
         else:
             for error in form.non_field_errors():
@@ -187,6 +107,10 @@ def search(request):
 
 @login_required
 def book(request, flight_id, return_flight_id=None):
+    if request.user.user_type != 'passenger':
+        messages.error(request, " Booking is only available for passenger user ")
+        return redirect('index')
+
     flight = get_object_or_404(Flight, pk=flight_id)
     return_flight = None
     if return_flight_id:
@@ -211,6 +135,7 @@ def book(request, flight_id, return_flight_id=None):
                 infants=infants
             )
             booking.save()
+
 
             for passenger_form in form.passenger_forms:
                 passenger = passenger_form.save(commit=False)
@@ -397,6 +322,7 @@ def payment(request, booking_id):
             # Process payment here (you would typically integrate with a payment gateway)
             booking.status = 'Confirmed'
             booking.save()
+
             messages.success(request, "Payment successful. Your booking is confirmed.")
             return redirect('booking_confirmation', booking_id=booking.id)
     else:
@@ -458,8 +384,9 @@ def user_logout(request):
     logout(request)
     messages.success(request, "You've been successfully logged out.")
     return redirect('index')
+
 def is_admin(user):
-    return user.is_authenticated and user.user_type == 'admin'
+    return user.is_authenticated and user.user_type == 'admin' and user.user_type != 'passenger'
 
 
 @login_required

@@ -32,8 +32,6 @@
 </div>
 {% endif %}
 
-
-
 <form id="bookingForm" method="post" class="needs-validation" novalidate>
     {% csrf_token %}
     {{ form.non_field_errors }}
@@ -52,6 +50,7 @@
                             {{ field.errors }}
                         </div>
                     {% endfor %}
+                    <div class="age-message" style="display: none; color: blue;"></div>
                 </div>
             </div>
         {% endfor %}
@@ -84,6 +83,27 @@
             }
             form.classList.add('was-validated');
         }, false);
+
+        // Add event listeners to all passenger type selects
+        const passengerTypes = document.querySelectorAll('.passenger-type');
+        passengerTypes.forEach((select, index) => {
+            select.addEventListener('change', function() {
+                showAgeMessage(this, index + 1);
+            });
+        });
     });
+
+    function showAgeMessage(select, passengerIndex) {
+        var messageDiv = select.closest('.card-body').querySelector('.age-message');
+        if (select.value === 'child') {
+            messageDiv.innerHTML = 'Child is of 2-12 age. Aadhar Cards will be checked at the time of boarding.';
+            messageDiv.style.display = 'block';
+        } else if (select.value === 'infant') {
+            messageDiv.innerHTML = 'Infant is of age below 2 years. Aadhar Cards will be checked at the time of boarding.';
+            messageDiv.style.display = 'block';
+        } else {
+            messageDiv.style.display = 'none';
+        }
+    }
 </script>
 {% endblock %}

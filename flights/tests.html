@@ -19,3 +19,52 @@
 {% endif %}
 
 {% endblock %}
+
+
+Admin Dashborad
+<div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Booking Overview</h5>
+                <p class="card-text">View and manage all bookings in the system.</p>
+                <a href="#" class="btn btn-primary">View Bookings</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+Admin Dashboard
+  <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">User Management</h5>
+                <p class="card-text">View and manage user accounts.</p>
+                <a href="#" class="btn btn-primary">Manage Users</a>
+            </div>
+        </div>
+    </div>
+
+search_resuts
+
+
+{% for flight in outbound_flights %}
+    <div class="flight-item">
+        <!-- Flight details here -->
+        {% if user.is_authenticated and user.user_type == 'passenger' %}
+            <a href="{% url 'book' flight.id %}" class="btn btn-primary">Book Now</a>
+        {% endif %}
+    </div>
+
+see i gave you my all codes for kafka integration with flight management system  but kafka-python is
+not able to installl properly and shows Successfully imported six
+Failed to import KafkaProducer: No module named 'kafka.vendor.six.moves'
+Failed to import range from kafka.vendor.six.moves: No module named 'kafka.vendor.six.moves'
+Python version: 3.12.4 (tags/v3.12.4:8e8a4ba, Jun  6 2024, 19:30:16) [MSC v.1940 64 bit (AMD64)]
+Six version: 1.16.0
+Kafka-python version: Not installed when i run a script . but on the other hand when i run script
+to check for confluent kafka it shows - Successfully connected to Kafka!.  what changes should i make
+in kafka code of my proejct. see i gave you my old code. what to do so that proejct runs with conflunet kafka
+as its working rather than kafka-python
+{% endfor %}
+

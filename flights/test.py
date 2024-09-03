@@ -1,70 +1,145 @@
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages
-from .models import Booking, Passenger
-from django.db.models import Prefetch, Exists, OuterRef
+from kafka import KafkaProducer, KafkaConsumer
+from django.conf import settings
+import json
+
+def get_kafka_producer():
+    return KafkaProducer(
+        bootstrap_servers=settings.KAFKA_BOOTSTRAP_SERVERS,
+        value_serializer=lambda v: json.dumps(v).encode('utf-8')
+    )
+
+def get_kafka_consumer(topic):
+    return KafkaConsumer(
+        topic,
+        bootstrap_servers=settings.KAFKA_BOOTSTRAP_SERVERS,
+        value_deserializer=lambda x: json.loads(x.decode('utf-8'))
+    )
+
+def produce_message(topic, message):
+    producer = get_kafka_producer()
+    producer.send(topic, message)
+    producer.flush()
+
+def consume_messages(topic, callback):
+    consumer = get_kafka_consumer(topic)
+    for message in consumer:
+        callback(message.value)
+
+views.py
+
+from .kafka_utils import produce_message
+from django.conf import settings
+
+
+@login_required
+def book(request, flight_id, return_flight_id=None):
+    # ... (existing code) ...
+
+    if form.is_valid():
+        booking = form.save()
+
+        # Produce a Kafka message for the new booking
+        produce_message(settings.KAFKA_BOOKING_NOTIFICATIONS_TOPIC, {
+            'booking_id': booking.id,
+            'user_id': request.user.id,
+            'flight_id': flight_id,
+            'return_flight_id': return_flight_id
+        })
+
+        return redirect('payment', booking_id=booking.id)
+
+    # ... (rest of the function)
+
+
+@login_required
+def payment(request, booking_id):
+    # ... (existing code) ...
+
+    if payment_form.is_valid():
+        # Process payment here
+        booking.status = 'Confirmed'
+        booking.save()
+
+        # Produce a Kafka message for the payment event
+        produce_message(settings.KAFKA_PAYMENT_EVENTS_TOPIC, {
+            'booking_id': booking_id,
+            'user_id': request.user.id,
+            'amount': str(total_price)
+        })
+
+        messages.success(request, "Payment successful. Your booking is confirmed.")
+        return redirect('booking_confirmation', booking_id=booking.id)
+
+    # ... (rest of the function)
+
+
+def search(request):
+    if request.method == 'POST':
+        form = SearchForm(request.POST)
+        if form.is_valid():
+            # ... (existing code) ...
+
+            # Produce a Kafka message for search analytics
+            produce_message(settings.KAFKA_SEARCH_ANALYTICS_TOPIC, {
+                'user_id': request.user.id if request.user.is_authenticated else None,
+                'origin': form.cleaned_data['origin'].id,
+                'destination': form.cleaned_data['destination'].id,
+                'departure_date': form.cleaned_data['departure_date'].isoformat(),
+                'return_date': form.cleaned_data['return_date'].isoformat() if form.cleaned_data[
+                    'return_date'] else None,
+            })
+
+            return redirect('search_results')
+
+    # ... (rest of the function)
+
+
+# kafka consumers management command
+
+from django.core.management.base import BaseCommand
+from django.conf import settings
+from flights.kafka_utils import consume_messages
 import logging
 
 logger = logging.getLogger(__name__)
 
-@login_required
-def bookings(request):
-    bookings = Booking.objects.filter(user=request.user).prefetch_related(
-        Prefetch('passengers', queryset=Passenger.objects.order_by('id'))
-    ).order_by('-booking_date')
+class Command(BaseCommand):
+    help = 'Runs Kafka consumers for various topics'
 
-    return render(request, 'flights/bookings.html', {'bookings': bookings})
+    def handle(self, *args, **options):
+        def process_flight_updates(message):
+            logger.info(f"Received flight update: {message}")
+            # Process flight update logic here
 
-@login_required
-def cancel_booking(request):
-    if request.method == 'POST':
-        passenger_id = request.POST.get('passenger_id')
-        try:
-            passenger = Passenger.objects.select_related('booking__flight').get(passenger_id=passenger_id)
-            if passenger.booking.user != request.user:
-                messages.error(request, "You don't have permission to cancel this booking.")
-                return redirect('cancel_booking')
+        def process_booking_notifications(message):
+            logger.info(f"Received booking notification: {message}")
+            # Process booking notification logic here
 
-            context = {
-                'passenger': passenger,
-                'booking': passenger.booking,
-            }
-            return render(request, 'flights/confirm_cancel_booking.html', context)
-        except Passenger.DoesNotExist:
-            messages.error(request, "No passenger found with this ID.")
-    return render(request, 'flights/cancel_booking.html')
+        def process_payment_events(message):
+            logger.info(f"Received payment event: {message}")
+            # Process payment event logic here
 
-@login_required
-def confirm_cancel_booking(request, passenger_id):
-    try:
-        passenger = Passenger.objects.select_related('booking__flight').get(passenger_id=passenger_id)
-        if passenger.booking.user != request.user:
-            messages.error(request, "You don't have permission to cancel this booking.")
-            return redirect('cancel_booking')
+        def process_search_analytics(message):
+            logger.info(f"Received search analytics: {message}")
+            # Process search analytics logic here
 
-        if request.method == 'POST':
-            if not passenger.is_cancelled:
-                passenger.is_cancelled = True
-                passenger.save()
+        consume_messages(settings.KAFKA_FLIGHT_UPDATES_TOPIC, process_flight_updates)
+        consume_messages(settings.KAFKA_BOOKING_NOTIFICATIONS_TOPIC, process_booking_notifications)
+        consume_messages(settings.KAFKA_PAYMENT_EVENTS_TOPIC, process_payment_events)
+        consume_messages(settings.KAFKA_SEARCH_ANALYTICS_TOPIC, process_search_analytics)
 
-                # Update available seats
-                flight = passenger.booking.flight
-                if passenger.ticket_class == 'economy':
-                    flight.available_economy_seats = min(flight.economy_seats, flight.available_economy_seats + 1)
-                else:
-                    flight.available_business_seats = min(flight.business_seats, flight.available_business_seats + 1)
-                flight.save()
+# kafka configuration in settings.py
 
-                messages.success(request, f"Booking for passenger {passenger.first_name} {passenger.last_name} has been cancelled.")
-            else:
-                messages.error(request, "This booking is already cancelled.")
-            return redirect('bookings')
+# Kafka Configuration
+KAFKA_BOOTSTRAP_SERVERS = ['localhost:9092']  # Replace with your Kafka broker address
+KAFKA_FLIGHT_UPDATES_TOPIC = 'flight_updates'
+KAFKA_BOOKING_NOTIFICATIONS_TOPIC = 'booking_notifications'
+KAFKA_PAYMENT_EVENTS_TOPIC = 'payment_events'
+KAFKA_SEARCH_ANALYTICS_TOPIC = 'search_analytics'
+KAFKA_USER_ACTIVITY_TOPIC = 'user_activity'
 
-        context = {
-            'passenger': passenger,
-            'booking': passenger.booking
-        }
-        return render(request, 'flights/confirm_cancel_booking.html', context)
-    except Passenger.DoesNotExist:
-        messages.error(request, "No passenger found with this ID.")
-        return redirect('cancel_booking')
+
+
+
+
+

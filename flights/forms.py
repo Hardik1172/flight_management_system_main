@@ -51,14 +51,9 @@ class CustomAuthenticationForm(AuthenticationForm):
                 if user.user_type != user_type:
                     raise forms.ValidationError("Invalid user type for this account.")
             except CustomUser.DoesNotExist:
-                pass  # User authentication will fail in the next step
+                pass
 
         return cleaned_data
-
-
-
-def clean():
-    destination = get_user_model()
 
 
 
@@ -138,6 +133,7 @@ class FlightForm(forms.ModelForm):
         widget=forms.Select(attrs={'class': 'form-control'})
     )
 
+
     class Meta:
         model = Flight
         fields = ['flight_number', 'origin', 'destination', 'departure_time', 'arrival_time',
@@ -214,6 +210,13 @@ class PassengerForm(forms.ModelForm):
     class Meta:
         model = Passenger
         fields = ['first_name', 'last_name', 'passenger_type', 'meal_choice', 'ticket_class']
+        widgets = {
+            'passenger_type': forms.Select(attrs={'class': 'form-control passenger-type'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['passenger_type'].widget.attrs.update({'onchange': 'showAgeMessage(this)'})
 
 class BookingWithPassengersForm(forms.Form):
     def __init__(self, *args, **kwargs):
